@@ -79,8 +79,11 @@ namespace ElecKit.Commands
             var valueCols = Enumerable.Range(0, header.Length).Where(i => i != idCol && i != markCol && !string.IsNullOrWhiteSpace(header[i])).ToList();
             if (valueCols.Count == 0) { TaskDialog.Show("Import Values", "No parameter columns found."); return Result.Cancelled; }
 
+            // Build the Mark index whenever the CSV contains Mark, even when ElementId is
+            // the primary key. This lets us detect stale/mismatched IDs rather than silently
+            // applying values to an element whose Mark no longer matches the exported row.
             var markMap = new Dictionary<string, List<Element>>(StringComparer.OrdinalIgnoreCase);
-            if (idCol < 0)
+            if (markCol >= 0)
             {
                 foreach (Element e in new FilteredElementCollector(ctx.Doc).WhereElementIsNotElementType())
                 {
@@ -109,6 +112,7 @@ namespace ElecKit.Commands
                     string[] cells = rows[r];
                     if (cells.All(string.IsNullOrWhiteSpace)) continue;
                     Element el = null;
+                    string rowMark = markCol >= 0 && markCol < cells.Length ? cells[markCol].Trim() : string.Empty;
                     if (idCol >= 0 && idCol < cells.Length)
                     {
                         int id;
@@ -118,12 +122,26 @@ namespace ElecKit.Commands
                     else if (markCol >= 0 && markCol < cells.Length)
                     {
                         List<Element> matches;
-                        string mark = cells[markCol].Trim();
-                        if (markMap.TryGetValue(mark, out matches) && matches.Count == 1) el = matches[0];
-                        else if (!string.IsNullOrWhiteSpace(mark) && issues.Count < 50)
-                            issues.Add("Row " + (r + 1) + ": Mark is missing or not unique: " + mark);
+                        if (markMap.TryGetValue(rowMark, out matches) && matches.Count == 1) el = matches[0];
+                        else if (!string.IsNullOrWhiteSpace(rowMark) && issues.Count < 50)
+                            issues.Add("Row " + (r + 1) + ": Mark is missing or not unique: " + rowMark);
                     }
                     if (el == null || el is ElementType) { skipped++; continue; }
+
+                    // If both keys were exported, require them to agree. ElementIds can change
+                    // after model replacement/recreation; a stale ID must not update the wrong row.
+                    if (idCol >= 0 && markCol >= 0 && !string.IsNullOrWhiteSpace(rowMark))
+                    {
+                        List<Element> markMatches;
+                        if (!markMap.TryGetValue(rowMark, out markMatches) ||
+                            markMatches.Count != 1 || markMatches[0].Id.IntegerValue != el.Id.IntegerValue)
+                        {
+                            skipped++;
+                            if (issues.Count < 50)
+                                issues.Add("Row " + (r + 1) + ": ElementId and Mark do not identify the same unique element; row skipped.");
+                            continue;
+                        }
+                    }
                     bool changed = false;
                     foreach (int c in valueCols)
                     {
