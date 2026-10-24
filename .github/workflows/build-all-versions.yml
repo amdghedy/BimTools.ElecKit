@@ -29,11 +29,18 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Get-ChildItem 'src' -Filter '*.cs' -Recurse | ForEach-Object {
-            $original = Get-Content $_.FullName -Raw
-            $updated = $original -replace '\.IntegerValue', '.Value'
-            if ($updated -ne $original) { Set-Content -Path $_.FullName -Value $updated -NoNewline -Encoding utf8 }
-          }
+          Get-ChildItem 'src' -Filter '*.cs' -Recurse |
+            Where-Object { $_.Name -ne 'AssignWorksetCommand.cs' } |
+            ForEach-Object {
+              $original = Get-Content $_.FullName -Raw
+              $updated = $original -replace '\\.IntegerValue', '.Value'
+              if ($updated -ne $original) { Set-Content -Path $_.FullName -Value $updated -NoNewline -Encoding utf8 }
+            }
+          # WorksetId intentionally retains IntegerValue in older APIs; migrate only ElementId expressions.
+          $worksetFile = 'src/Commands/AssignWorksetCommand.cs'
+          $worksetSource = Get-Content $worksetFile -Raw
+          $worksetUpdated = $worksetSource.Replace('e.Id.IntegerValue', 'e.Id.Value').Replace('p.AsElementId().IntegerValue', 'p.AsElementId().Value')
+          if ($worksetUpdated -ne $worksetSource) { Set-Content -Path $worksetFile -Value $worksetUpdated -NoNewline -Encoding utf8 }
       - name: Restore
         run: dotnet restore ElecKit.csproj -p:RevitVersion=${{ matrix.revit }}
       - name: Build version-specific add-in
