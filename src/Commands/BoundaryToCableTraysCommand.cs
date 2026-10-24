@@ -62,7 +62,7 @@ namespace ElecKit.Commands
             Level level = plan.GenLevel;
             double z = level.Elevation + UnitConv.MmToFeet(offsetMm);
             List<List<XYZ>> chains = LineChains.Build(sources.Select(s => (Line)s.GeometryCurve).ToList(), JoinToleranceFeet);
-            int runs = 0, trays = 0, elbows = 0, failedRuns = 0, failedFittings = 0;
+            int runs = 0, trays = 0, elbows = 0, failedRuns = 0;
             var failures = new List<string>();
             ctx.Transact("Boundary to cable trays", () =>
             {
@@ -105,7 +105,7 @@ namespace ElecKit.Commands
                         catch (Exception ex)
                         {
                             if (sub.GetStatus() == TransactionStatus.Started) sub.RollBack();
-                            failedRuns++; failedFittings++;
+                            failedRuns++;
                             if (failures.Count < 8) failures.Add(ex.Message);
                             Log.Error(ex);
                         }

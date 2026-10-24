@@ -128,5 +128,7 @@ Clash Review screens host-model elements against other host elements and loaded 
 
 - **Circuit & Panel Audit** — exports conservative voltage, pole-count and explicitly declared VA-capacity checks; missing parameters are flagged for review.
 - **Route Cable Tray** — creates direct or L-shaped routes from ordered anchor picks and rolls back route pairs when a required elbow cannot be created.
+- **Lines to Cable Tray** — converts straight detail/model lines with per-segment rollback and failure reporting.
+- **Boundary to Cable Trays** — creates connected tray runs, including closed boundaries, and rolls back the entire run if a required elbow fails.
 - **Deployment Audit** — checks the Revit 2020 manifest, deployed DLL and loaded assembly hashes.
 - Transaction and command outcomes are logged locally. Live Revit 2020 validation remains a release gate.
