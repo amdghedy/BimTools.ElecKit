@@ -18,5 +18,6 @@
     <Compile Include="../../src/Core/Csv.cs" Link="Production/Csv.cs" />
     <Compile Include="../../src/Core/LengthUnits.cs" Link="Production/LengthUnits.cs" />
     <Compile Include="../../src/Core/BoxClearance.cs" Link="Production/BoxClearance.cs" />
+    <Compile Include="../../src/Core/QuantityTakeoffGrouping.cs" Link="Production/QuantityTakeoffGrouping.cs" />
   </ItemGroup>
 </Project>
