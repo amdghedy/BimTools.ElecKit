@@ -21,6 +21,7 @@ namespace ElecKit.Commands
             public int CsvIndex;
             public int ParameterId;
             public string Name;
+            public bool IsTypeParameter;
         }
 
         protected override Result Run(ToolContext ctx, ref string message)
@@ -36,10 +37,10 @@ namespace ElecKit.Commands
             List<string[]> rows;
             try
             {
-                rows = File.ReadAllLines(dlg.FileName, Encoding.UTF8)
-                    .Where(line => !string.IsNullOrWhiteSpace(line) &&
-                        !line.TrimStart().StartsWith("#", StringComparison.Ordinal))
-                    .Select(CsvLineParser.Parse).ToList();
+                rows = CsvLineParser.ParseRecords(File.ReadAllText(dlg.FileName, Encoding.UTF8))
+                    .Where(row => row.Length > 0 && !(row.Length == 1 && string.IsNullOrWhiteSpace(row[0])) &&
+                        !row[0].TrimStart().StartsWith("#", StringComparison.Ordinal))
+                    .ToList();
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is FormatException)
             {
@@ -80,7 +81,31 @@ namespace ElecKit.Commands
                     TaskDialog.Show("Import Schedule Round-Trip", "Invalid or duplicate parameter-id column: " + token);
                     return Result.Cancelled;
                 }
-                columns.Add(new Column { CsvIndex = i, ParameterId = parameterId, Name = token.Substring(end + 2) });
+                string metadata = token.Substring(end + 2);
+                bool isTypeParameter;
+                string fieldName;
+                if (metadata.StartsWith("TYPE__", StringComparison.OrdinalIgnoreCase))
+                {
+                    isTypeParameter = true;
+                    fieldName = metadata.Substring("TYPE__".Length);
+                }
+                else if (metadata.StartsWith("INSTANCE__", StringComparison.OrdinalIgnoreCase))
+                {
+                    isTypeParameter = false;
+                    fieldName = metadata.Substring("INSTANCE__".Length);
+                }
+                else
+                {
+                    TaskDialog.Show("Import Schedule Round-Trip", "Column must declare TYPE or INSTANCE parameter scope: " + token);
+                    return Result.Cancelled;
+                }
+                columns.Add(new Column
+                {
+                    CsvIndex = i,
+                    ParameterId = parameterId,
+                    Name = fieldName,
+                    IsTypeParameter = isTypeParameter
+                });
             }
             if (columns.Count == 0)
             {
@@ -145,7 +170,12 @@ namespace ElecKit.Commands
                     {
                         string raw = cells[column.CsvIndex];
                         if (string.IsNullOrEmpty(raw)) continue;
-                        Parameter parameter = element.get_Parameter(new ElementId(column.ParameterId));
+                        Element parameterOwner = column.IsTypeParameter
+                            ? ctx.Doc.GetElement(element.GetTypeId())
+                            : element;
+                        Parameter parameter = parameterOwner == null
+                            ? null
+                            : parameterOwner.get_Parameter(new ElementId(column.ParameterId));
                         if (parameter == null || parameter.IsReadOnly)
                         {
                             failedValues++;
