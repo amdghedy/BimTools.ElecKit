@@ -120,7 +120,10 @@ namespace ElecKit.Core
               typeof(CircuitReportCommand)),
             T("SelectByCircuit", "Select by\nCircuit", "Circuits",
               "Pick one element and select every element on the same circuit(s).",
-              typeof(SelectByCircuitCommand))
+              typeof(SelectByCircuitCommand)),
+            T("AssignCircuitPanel", "Assign Circuit\nPanel", "Circuits",
+              "Pick a circuit element and destination electrical panel to reassign the circuit. Verify electrical compatibility and panel capacity afterward.",
+              typeof(AssignCircuitPanelCommand))
         };
     }
 }
