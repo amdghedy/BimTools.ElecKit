@@ -20,8 +20,9 @@ namespace ElecKit.Core
                     (string.IsNullOrWhiteSpace(message) ? "" : " message=" + message));
                 return result;
             }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+            catch (Autodesk.Revit.Exceptions.OperationCanceledException ex)
             {
+                Log.Info("COMMAND CANCELLED name=" + GetType().FullName + " reason=" + ex.Message);
                 return Result.Cancelled;
             }
             catch (Exception ex)
