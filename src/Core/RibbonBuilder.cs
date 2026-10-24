@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Autodesk.Revit.UI;
 
@@ -10,7 +11,13 @@ namespace ElecKit.Core
         public static void Build(UIControlledApplication app)
         {
             try { app.CreateRibbonTab(TabName); }
-            catch { /* tab already exists */ }
+            catch (Autodesk.Revit.Exceptions.ArgumentException ex)
+            {
+                // Revit reports an ArgumentException when a ribbon tab with this name already exists.
+                // Do not hide unrelated startup errors that could leave the ribbon only partially built.
+                if (ex.Message == null || ex.Message.IndexOf("already exists", StringComparison.OrdinalIgnoreCase) < 0)
+                    throw;
+            }
 
             string assemblyPath = typeof(RibbonBuilder).Assembly.Location;
             var panels = new Dictionary<string, RibbonPanel>();
