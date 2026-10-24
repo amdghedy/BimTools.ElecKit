@@ -105,7 +105,7 @@ namespace ElecKit.Core
 
             // Quantity reporting and data exchange
             T("QuantityTakeoff", "Quantity\nTakeoff", "Schedules",
-              "Exports grouped electrical quantities from the active model view to CSV, including instance counts and MEP curve lengths in millimetres.",
+              "Exports grouped quantities from the active view to CSV. Choose electrical categories only or include mechanical equipment, ductwork and pipework; curve lengths are in millimetres.",
               typeof(QuantityTakeoffCommand)),
             T("ImportScheduleValues", "Import CSV\nValues", "Schedules",
               "Imports writable parameter values from CSV using ElementId or unique Mark keys; previews the operation and reports skipped or rejected values.",
