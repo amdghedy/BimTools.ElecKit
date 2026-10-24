@@ -46,15 +46,15 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 ## Reliability and release gaps
 
 - [x] Clean Lines: restrict deletion to duplicate or fully contained finite segments; partial overlaps and disjoint collinear segments must remain.
-- [x] Build verification: the latest successful CI run validates the source tree through the workset collector fix; continue requiring a successful run for every subsequent change.
+- [x] Build verification: the latest successful CI run is linked from GitHub Actions; require a successful run for every subsequent change.
 - [ ] Runtime verification: test commands inside Revit 2020 with a disposable model before calling them production-ready.
 - [ ] Transaction consistency: audit conversion and creation commands for clear rollback behavior and partial-success reporting.
 - [x] Ribbon startup: suppress only the known “tab already exists” condition; surface unrelated startup failures.
 - [x] Deployment: Debug copy failures are no longer suppressed by `ContinueOnError`.
-- [x] Automated tests: added a .NET 8 xUnit project and six regression tests for CSV record parsing (empty/trailing cells, quoted delimiters, escaped quotes, malformed quoting, null input). GitHub Actions runs these tests. Revit-dependent geometry, parameter mapping and quantity logic still need separate tests.
+- [x] Automated tests: added a .NET 8 xUnit project with CSV parser regression tests and length-unit conversion regression tests. GitHub Actions runs these tests. Revit-dependent geometry, parameter mapping, grouped quantity totals and command behavior still need separate tests.
 - [x] Data import validation: rejects duplicate parameter headers and duplicate row keys before transaction; malformed CSV quoting and file-access errors now produce a user-facing cancellation message.
-- [ ] Quantity takeoff: test each supported category and confirm the active view is a valid model view; add regression fixtures for grouped totals and curve-length conversion.
-- [ ] Documentation: maintain a command inventory and clearly distinguish source-present, CI-build-passing and Revit-runtime-tested states.
+- [ ] Quantity takeoff: test each supported category and confirm the active view is a valid model view; grouped-total logic and Revit curve extraction still need regression fixtures. Shared feet/mm conversion now has isolated unit tests.
+- [x] Documentation: maintain a command inventory and clearly distinguish source-present, CI-build-passing and Revit-runtime-tested states.
 - [ ] Remove or archive `fix-revit2020-compile.patch` once its changes are confirmed to be incorporated and no longer needed.
 
 ## Automated regression tests\n\nThe `tests/ElecKit.Tests` project targets .NET 8 so pure logic can be exercised in GitHub Actions without installing Revit. The production `CsvLineParser` is linked directly into that test project and is also used by the Revit CSV importer. This does not replace Revit 2020 integration testing.\n\n## Recommended implementation order
