@@ -1,0 +1,94 @@
+name: Build all Revit versions and installer
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Revit ${{ matrix.revit }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        revit: ["2020", "2021", "2022", "2023", "2024", "2025", "2026"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+      - name: Restore
+        run: dotnet restore ElecKit.csproj -p:RevitVersion=${{ matrix.revit }}
+      - name: Build version-specific add-in
+        run: dotnet build ElecKit.csproj -c Release --no-restore -p:RevitVersion=${{ matrix.revit }} -p:OutputPath=artifacts/Revit${{ matrix.revit }}/
+      - name: Stage manifest and verify package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = "artifacts/Revit${{ matrix.revit }}"
+          if (!(Test-Path "$dir/ElecKit.dll")) { throw "Build output missing: $dir/ElecKit.dll" }
+          Copy-Item "ElecKit.addin" "$dir/ElecKit.addin" -Force
+          $manifest = [xml](Get-Content "$dir/ElecKit.addin" -Raw)
+          $assembly = [string]$manifest.RevitAddIns.AddIn.Assembly
+          if ($assembly -ne 'ElecKit\ElecKit.dll') { throw "Unexpected manifest Assembly path: $assembly" }
+          Get-FileHash "$dir/ElecKit.dll" -Algorithm SHA256 | Format-List
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElecKit-Revit${{ matrix.revit }}
+          path: artifacts/Revit${{ matrix.revit }}/*
+          if-no-files-found: error
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Test Revit-independent logic
+        run: dotnet test tests/ElecKit.Tests/ElecKit.Tests.csproj -c Release
+  installer:
+    name: Package selectable-version setup EXE
+    runs-on: windows-latest
+    needs: [build, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ElecKit-Revit-*
+          path: artifacts
+          merge-multiple: false
+      - name: Normalize artifact folders
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($v in 2020..2026) {
+            $source = "artifacts/ElecKit-Revit-$v"
+            $dest = "artifacts/Revit$v"
+            if (!(Test-Path "$source/ElecKit.dll")) { throw "Missing build artifact for Revit $v." }
+            if (!(Test-Path "$source/ElecKit.addin")) { throw "Missing manifest for Revit $v." }
+            New-Item -ItemType Directory -Force -Path $dest | Out-Null
+            Copy-Item "$source/*" $dest -Force
+          }
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $iscc = Join-Path $env:ProgramFiles 'Inno Setup 6/ISCC.exe'
+          if (!(Test-Path $iscc)) { throw "Inno Setup compiler not found: $iscc" }
+          & $iscc "installer/ElecKit.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
+          if (!(Test-Path 'installer/dist/ElecKit-Setup.exe')) { throw 'Installer EXE was not created.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElecKit-Setup-EXE
+          path: installer/dist/ElecKit-Setup.exe
+          if-no-files-found: error
