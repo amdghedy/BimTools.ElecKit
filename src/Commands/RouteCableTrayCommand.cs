@@ -192,7 +192,7 @@ namespace ElecKit.Commands
         private static Result RouteAroundObstacles(ToolContext ctx, ViewPlan plan, IList<XYZ> points,
             IList<Reference> picked, CableTrayType trayType, Level level, double clearanceFeet)
         {
-            var excluded = new HashSet<int>(picked.Select(r => r.ElementId.IntegerValue));
+            var excluded = new HashSet<long>(picked.Select(r => r.ElementId.IntegerValue));
             double minX = points.Min(p => p.X) - UnitConv.MmToFeet(5000);
             double maxX = points.Max(p => p.X) + UnitConv.MmToFeet(5000);
             double minY = points.Min(p => p.Y) - UnitConv.MmToFeet(5000);
