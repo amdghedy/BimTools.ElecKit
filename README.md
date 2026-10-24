@@ -24,7 +24,7 @@ ElecKit brings frequently used electrical drafting, wiring, model-selection, and
 - **Line cleanup and editing:** connect runs, split lines, fillet corners or picked lines, and clean duplicate detail-line geometry.
 - **Wiring workflows:** create home-run lines, create conduits from boundary lines, place circuit-number text, and copy wire information into conduit comments.
 - **Model navigation and coordination:** select host elements, select same-type instances, use Smart Filter to select same-type, same-category, or same-parameter-value elements in the active view, assign selected elements to a user workset in a workshared model, create a 3D view around a selection, and export MEP clash candidates with solid-intersection checks where geometry is available.
-- **Schedule and circuit data:** export active or multiple schedules to CSV, export selected element parameters to a keyed CSV (ElementId and Mark), import parameter values from that CSV, create circuit reports, and select elements by circuit.\n- **Electrical quantity takeoff:** export grouped counts and MEP curve lengths from the active model view to CSV.
+- **Schedule and circuit data:** export active or multiple schedules to CSV, export selected element parameters to a keyed CSV (ElementId and Mark), import parameter values from that CSV, create circuit reports, and select elements by circuit.\n- **Electrical quantity takeoff:** export grouped counts and MEP curve lengths from the active model view to CSV. The grouping/aggregation logic has a Revit-independent regression suite; category-by-category behavior still requires a Revit 2020 test model.
 - **Central command registry:** ribbon tools are registered centrally rather than wired individually.
 
 Feature names describe intended workflows; availability and behavior can vary by selection, view, model content, and Revit API constraints.
@@ -116,7 +116,7 @@ Maintained by [amdghedy](https://github.com/amdghedy).
 
 ## Automated validation
 
-GitHub Actions builds the Revit 2020 / .NET Framework 4.7 add-in and runs the Revit-independent CSV parser regression tests in `tests/ElecKit.Tests`. These tests cover quoted delimiters, escaped quotes, empty cells and malformed quoting. A successful CI run does **not** establish that commands have been exercised inside Revit; the live Revit 2020 smoke test remains a release gate. See [the feature gap and delivery roadmap](ROADMAP.md).
+GitHub Actions builds the Revit 2020 / .NET Framework 4.7 add-in and runs the Revit-independent CSV parser regression tests in `tests/ElecKit.Tests`. These tests cover quoted delimiters, escaped quotes, empty cells, malformed quoting, length conversions, bounding-box clearance and grouped quantity aggregation. Category-by-category takeoff verification and all live-Revit command checks remain manual release gates. A successful CI run does **not** establish that commands have been exercised inside Revit; the live Revit 2020 smoke test remains a release gate. See [the feature gap and delivery roadmap](ROADMAP.md).
 
 
 ## Clash review scope
