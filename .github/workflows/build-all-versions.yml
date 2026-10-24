@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        revit: ["2020", "2021", "2022", "2023", "2024", "2025", "2026"]
+        revit: ["2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -67,7 +67,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($v in 2020..2026) {
+          foreach ($v in 2020..2027) {
             $source = "artifacts/ElecKit-Revit-$v"
             $dest = "artifacts/Revit$v"
             if (!(Test-Path "$source/ElecKit.dll")) { throw "Missing build artifact for Revit $v." }
