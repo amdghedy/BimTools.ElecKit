@@ -106,6 +106,9 @@ namespace ElecKit.Core
             T("ImportScheduleValues", "Import CSV\nValues", "Schedules",
               "Imports writable parameter values from CSV using ElementId or unique Mark keys; previews the operation and reports skipped or rejected values.",
               typeof(ImportScheduleValuesCommand)),
+            T("ExportElementParameters", "Export Element\nParameters", "Schedules",
+              "Exports selected model instances to a keyed CSV with ElementId, Mark and common writable instance parameters for review and later import.",
+              typeof(ExportElementParametersCommand)),
 
             // Circuits
             T("CircuitReport", "Circuit\nReport", "Circuits",
