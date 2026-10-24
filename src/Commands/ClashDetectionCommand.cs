@@ -123,9 +123,13 @@ namespace ElecKit.Commands
                 for (int j = i + 1; j < items.Count; j++)
                 {
                     // All items are normalized to host coordinates, so link-to-link comparisons are valid.
-                    if (!Overlaps(items[i].Box, items[j].Box)) continue;
+                    bool overlap = Overlaps(items[i].Box, items[j].Box);
+                    double boxDistance = BoxDistance(items[i].Box, items[j].Box);
+                    if (!overlap && (clearanceFeet <= 0 || boxDistance > clearanceFeet)) continue;
 
-                    string method = SolidIntersectionStatus(items[i].Solids, items[j].Solids);
+                    string method = overlap
+                        ? SolidIntersectionStatus(items[i].Solids, items[j].Solids)
+                        : "Within requested bounding-box clearance; exact solid distance not calculated";
                     clashes.Add(new[] {
                         items[i].Source, items[i].ElementId, items[i].Category, items[i].Element.Name ?? "",
                         items[j].Source, items[j].ElementId, items[j].Category, items[j].Element.Name ?? "", method
@@ -151,13 +155,22 @@ namespace ElecKit.Commands
             if (dlg.ShowDialog() != true) return Result.Cancelled;
 
             var csv = new StringBuilder();
-            csv.AppendLine("Source A,ElementId A,Category A,Name A,Source B,ElementId B,Category B,Name B,Geometry Check");
+            csv.AppendLine("Source A,ElementId A,Category A,Name A,Source B,ElementId B,Category B,Name B,Geometry Check,Bounding Box Distance (mm),Requested Threshold (mm)");
             foreach (string[] row in clashes)
-                csv.AppendLine(string.Join(",", row.Select(Csv.Escape)));
+            {
+                double distanceFeet = BoxDistance(
+                    items.First(x => x.Source == row[0] && x.ElementId == row[1] && x.Category == row[2] && (x.Element.Name ?? "") == row[3]).Box,
+                    items.First(x => x.Source == row[4] && x.ElementId == row[5] && x.Category == row[6] && (x.Element.Name ?? "") == row[7]).Box);
+                string[] output = row.Concat(new[] {
+                    LengthUnits.FeetToMillimetres(distanceFeet).ToString("0.##", CultureInfo.InvariantCulture),
+                    clearanceMm.ToString("0.##", CultureInfo.InvariantCulture)
+                }).ToArray();
+                csv.AppendLine(string.Join(",", output.Select(Csv.Escape)));
+            }
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
             TaskDialog.Show("Clash Review", clashes.Count + " host-host/host-linked/linked-linked bounding-box overlap candidates exported. " +
                 "Positive-volume solid intersections are confirmed where Revit geometry permits; unavailable or failed checks need manual review. " +
-                "This is not a clearance check.\\n\\n" + dlg.FileName);
+                "Bounding-box distances are broad-phase estimates only, not exact solid clearances.\\n\\n" + dlg.FileName);
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
             return Result.Succeeded;
@@ -305,6 +318,13 @@ namespace ElecKit.Commands
                 }
             }
             return operationFailed ? "Solid check incomplete - manual review" : "No positive-volume solid intersection";
+        }
+
+        private static double BoxDistance(BoundingBoxXYZ a, BoundingBoxXYZ b)
+        {
+            return BoxClearance.Distance(
+                a.Min.X, a.Min.Y, a.Min.Z, a.Max.X, a.Max.Y, a.Max.Z,
+                b.Min.X, b.Min.Y, b.Min.Z, b.Max.X, b.Max.Y, b.Max.Z);
         }
 
         private static bool Overlaps(BoundingBoxXYZ a, BoundingBoxXYZ b)
