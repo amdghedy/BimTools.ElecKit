@@ -105,10 +105,14 @@ namespace ElecKit.Commands
                     Csv.Escape(r.Level), r.Quantity.ToString(CultureInfo.InvariantCulture),
                     r.LengthMm.ToString("0.##", CultureInfo.InvariantCulture)));
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
-            TaskDialog.Show("Quantity Takeoff", rows.Count + " grouped rows exported. Lengths are in millimetres; quantities are instance counts.\n\n" + dlg.FileName);
+            string summary = rows.Count + " grouped rows exported. Lengths are in millimetres; quantities are instance counts.\n\n" + dlg.FileName;
+            if (categoryErrors.Count > 0)
+                summary += "\n\nWARNING: " + categoryErrors.Count + " category scan(s) failed; the export is partial.\n" +
+                    string.Join("\n", categoryErrors.Take(10));
+            TaskDialog.Show("Quantity Takeoff", summary);
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
-            return Result.Succeeded;
+            return categoryErrors.Count > 0 ? Result.Failed : Result.Succeeded;
         }
 
         private static string LevelName(Document doc, Element e)
