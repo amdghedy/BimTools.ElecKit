@@ -91,6 +91,10 @@ namespace ElecKit.Core
               "Exports the open schedule view to a single CSV file.",
               typeof(ExportActiveScheduleCommand)),
 
+            T("ClashDetection", "Clash\nReview", "Model",
+              "Exports MEP bounding-box overlap candidates from the active view to CSV. Treat results as screening candidates and verify exact geometry.",
+              typeof(ClashDetectionCommand)),
+
             // Quantity reporting and data exchange
             T("QuantityTakeoff", "Quantity\nTakeoff", "Schedules",
               "Exports grouped electrical quantities from the active model view to CSV, including instance counts and MEP curve lengths in millimetres.",
