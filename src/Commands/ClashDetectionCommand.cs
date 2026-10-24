@@ -14,8 +14,8 @@ using ElecKit.Core;
 namespace ElecKit.Commands
 {
     /// <summary>
-    /// Screens bounding-box overlap candidates and checks solid intersection when usable element solids are available.
-    /// Linked models are not included; geometry failures remain explicitly marked for manual review.
+    /// Screens host-host and host-linked MEP bounding-box candidates, then checks positive-volume solid intersections.
+    /// Linked geometry is transformed into host coordinates; geometry failures are marked for manual review.
     /// </summary>
     [Transaction(TransactionMode.ReadOnly)]
     public class ClashDetectionCommand : ElecCommand
@@ -34,7 +34,9 @@ namespace ElecKit.Commands
             BuiltInCategory.OST_FireAlarmDevices, BuiltInCategory.OST_CommunicationDevices,
             BuiltInCategory.OST_MechanicalEquipment, BuiltInCategory.OST_DuctCurves,
             BuiltInCategory.OST_DuctFitting, BuiltInCategory.OST_PipeCurves,
-            BuiltInCategory.OST_PipeFitting
+            BuiltInCategory.OST_PipeFitting, BuiltInCategory.OST_Walls,
+            BuiltInCategory.OST_Floors, BuiltInCategory.OST_StructuralFraming,
+            BuiltInCategory.OST_StructuralColumns
         };
 
         private sealed class Item
@@ -42,36 +44,56 @@ namespace ElecKit.Commands
             public Element Element;
             public BoundingBoxXYZ Box;
             public string Category;
+            public string Source;
+            public string ElementId;
             public List<Solid> Solids;
+            public bool IsLinked;
         }
 
         protected override Result Run(ToolContext ctx, ref string message)
         {
             if (ctx.Doc.ActiveView is ViewSchedule)
-            { TaskDialog.Show("Clash Review", "Open a model view and run the command again."); return Result.Cancelled; }
+            {
+                TaskDialog.Show("Clash Review", "Open a model view and run the command again.");
+                return Result.Cancelled;
+            }
 
             var items = new List<Item>();
-            foreach (BuiltInCategory cat in Categories)
+            CollectHostItems(ctx.Doc, ctx.Doc.ActiveView, items);
+            int linkCount = 0;
+            foreach (RevitLinkInstance link in new FilteredElementCollector(ctx.Doc)
+                .OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>())
             {
+                Document linkedDoc = null;
                 try
                 {
-                    foreach (Element e in new FilteredElementCollector(ctx.Doc, ctx.Doc.ActiveView.Id)
-                        .OfCategory(cat).WhereElementIsNotElementType())
+                    linkedDoc = link.GetLinkDocument();
+                    if (linkedDoc == null) continue; // unloaded link
+                    Transform transform = link.GetTotalTransform();
+                    int before = items.Count;
+                    CollectLinkedItems(linkedDoc, link, transform, items);
+                    linkCount++;
+                    if (items.Count > MaxElements)
                     {
-                        BoundingBoxXYZ box = e.get_BoundingBox(ctx.Doc.ActiveView);
-                        if (box == null) continue;
-                        items.Add(new Item { Element = e, Box = box, Category = LabelUtils.GetLabelFor(cat), Solids = GetSolids(e) });
+                        TaskDialog.Show("Clash Review", "Host and linked models contain more than " + MaxElements +
+                            " candidate elements. Narrow the host view/categories or unload unnecessary links and retry.");
+                        return Result.Cancelled;
                     }
                 }
-                catch (Exception ex) { Log.Error(ex); }
+                catch (Exception ex)
+                {
+                    Log.Error(ex);
+                }
             }
 
             if (items.Count < 2)
-            { TaskDialog.Show("Clash Review", "Fewer than two supported MEP elements with bounding boxes were found in the active view."); return Result.Succeeded; }
+            {
+                TaskDialog.Show("Clash Review", "Fewer than two supported host/linked elements with bounding boxes were found.");
+                return Result.Succeeded;
+            }
             if (items.Count > MaxElements)
             {
-                TaskDialog.Show("Clash Review", "The active view contains " + items.Count + " candidate elements. Limit is " +
-                    MaxElements + " to keep pairwise checking responsive. Narrow the view or use a selection first.");
+                TaskDialog.Show("Clash Review", "The candidate count exceeds the safety limit of " + MaxElements + ".");
                 return Result.Cancelled;
             }
 
@@ -80,59 +102,149 @@ namespace ElecKit.Commands
             {
                 for (int j = i + 1; j < items.Count; j++)
                 {
-                    if (Overlaps(items[i].Box, items[j].Box))
-                    {
-                        Element a = items[i].Element, b = items[j].Element;
-                        string method = SolidIntersectionStatus(items[i].Solids, items[j].Solids);
-                        clashes.Add(new[] {
-                            a.Id.IntegerValue.ToString(CultureInfo.InvariantCulture), items[i].Category, a.Name ?? "",
-                            b.Id.IntegerValue.ToString(CultureInfo.InvariantCulture), items[j].Category, b.Name ?? "", method
-                        });
-                    }
+                    // Do not report link-to-link pairs; each link is compared against host elements.
+                    if (items[i].IsLinked && items[j].IsLinked) continue;
+                    if (!Overlaps(items[i].Box, items[j].Box)) continue;
+
+                    string method = SolidIntersectionStatus(items[i].Solids, items[j].Solids);
+                    clashes.Add(new[] {
+                        items[i].Source, items[i].ElementId, items[i].Category, items[i].Element.Name ?? "",
+                        items[j].Source, items[j].ElementId, items[j].Category, items[j].Element.Name ?? "", method
+                    });
                 }
             }
 
             if (clashes.Count == 0)
-            { TaskDialog.Show("Clash Review", "No bounding-box overlap candidates were found in the active view."); return Result.Succeeded; }
+            {
+                TaskDialog.Show("Clash Review", "No bounding-box overlap candidates were found. Checked host elements and " +
+                    linkCount + " loaded linked model(s).");
+                return Result.Succeeded;
+            }
 
-            var dlg = new SaveFileDialog { Title = "Export Clash Candidates", Filter = "CSV (*.csv)|*.csv",
+            var dlg = new SaveFileDialog
+            {
+                Title = "Export Host and Linked Clash Candidates",
+                Filter = "CSV (*.csv)|*.csv",
                 FileName = "ElecKit_ClashCandidates_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv",
-                AddExtension = true, DefaultExt = ".csv" };
+                AddExtension = true,
+                DefaultExt = ".csv"
+            };
             if (dlg.ShowDialog() != true) return Result.Cancelled;
 
             var csv = new StringBuilder();
-            csv.AppendLine("ElementId A,Category A,Name A,ElementId B,Category B,Name B,Geometry Check");
+            csv.AppendLine("Source A,ElementId A,Category A,Name A,Source B,ElementId B,Category B,Name B,Geometry Check");
             foreach (string[] row in clashes)
                 csv.AppendLine(string.Join(",", row.Select(Csv.Escape)));
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
-            TaskDialog.Show("Clash Review", clashes.Count + " bounding-box overlap candidates exported. The CSV distinguishes confirmed positive-volume solid intersections from no-intersection results and cases requiring manual review. Linked models are not included.\n\n" + dlg.FileName);
+            TaskDialog.Show("Clash Review", clashes.Count + " host-host/host-linked bounding-box overlap candidates exported. " +
+                "Positive-volume solid intersections are confirmed where Revit geometry permits; unavailable or failed checks need manual review. " +
+                "This is not a clearance check.\\n\\n" + dlg.FileName);
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
             return Result.Succeeded;
         }
 
+        private static void CollectHostItems(Document doc, View view, List<Item> items)
+        {
+            foreach (BuiltInCategory category in Categories)
+            {
+                try
+                {
+                    foreach (Element e in new FilteredElementCollector(doc, view.Id)
+                        .OfCategory(category).WhereElementIsNotElementType())
+                    {
+                        BoundingBoxXYZ box = e.get_BoundingBox(view);
+                        if (box == null) continue;
+                        items.Add(new Item
+                        {
+                            Element = e, Box = ToAxisAlignedBox(box, Transform.Identity),
+                            Category = LabelUtils.GetLabelFor(category), Source = doc.Title,
+                            ElementId = e.Id.IntegerValue.ToString(CultureInfo.InvariantCulture),
+                            Solids = GetSolids(e, Transform.Identity), IsLinked = false
+                        });
+                        if (items.Count > MaxElements) return;
+                    }
+                }
+                catch (Exception ex) { Log.Error(ex); }
+            }
+        }
 
-        private static List<Solid> GetSolids(Element element)
+        private static void CollectLinkedItems(Document linkedDoc, RevitLinkInstance link, Transform transform, List<Item> items)
+        {
+            foreach (BuiltInCategory category in Categories)
+            {
+                try
+                {
+                    foreach (Element e in new FilteredElementCollector(linkedDoc)
+                        .OfCategory(category).WhereElementIsNotElementType())
+                    {
+                        BoundingBoxXYZ localBox = e.get_BoundingBox(null);
+                        if (localBox == null) continue;
+                        BoundingBoxXYZ hostBox = ToAxisAlignedBox(localBox, transform);
+                        if (hostBox == null) continue;
+                        items.Add(new Item
+                        {
+                            Element = e, Box = hostBox, Category = LabelUtils.GetLabelFor(category),
+                            Source = link.Name + " [" + linkedDoc.Title + "]",
+                            ElementId = e.Id.IntegerValue.ToString(CultureInfo.InvariantCulture),
+                            Solids = GetSolids(e, transform), IsLinked = true
+                        });
+                        if (items.Count > MaxElements) return;
+                    }
+                }
+                catch (Exception ex) { Log.Error(ex); }
+            }
+        }
+
+        private static BoundingBoxXYZ ToAxisAlignedBox(BoundingBoxXYZ box, Transform linkTransform)
+        {
+            if (box == null) return null;
+            Transform boxTransform = box.Transform ?? Transform.Identity;
+            XYZ min = new XYZ(double.MaxValue, double.MaxValue, double.MaxValue);
+            XYZ max = new XYZ(double.MinValue, double.MinValue, double.MinValue);
+            for (int x = 0; x <= 1; x++)
+            for (int y = 0; y <= 1; y++)
+            for (int z = 0; z <= 1; z++)
+            {
+                XYZ p = new XYZ(x == 0 ? box.Min.X : box.Max.X,
+                                y == 0 ? box.Min.Y : box.Max.Y,
+                                z == 0 ? box.Min.Z : box.Max.Z);
+                p = linkTransform.OfPoint(boxTransform.OfPoint(p));
+                min = new XYZ(Math.Min(min.X, p.X), Math.Min(min.Y, p.Y), Math.Min(min.Z, p.Z));
+                max = new XYZ(Math.Max(max.X, p.X), Math.Max(max.Y, p.Y), Math.Max(max.Z, p.Z));
+            }
+            return new BoundingBoxXYZ { Min = min, Max = max, Transform = Transform.Identity };
+        }
+
+        private static List<Solid> GetSolids(Element element, Transform transform)
         {
             var solids = new List<Solid>();
             try
             {
                 var options = new Options { ComputeReferences = false, DetailLevel = ViewDetailLevel.Fine };
                 GeometryElement geometry = element.get_Geometry(options);
-                if (geometry != null) CollectSolids(geometry, solids);
+                if (geometry != null) CollectSolids(geometry, transform, solids);
             }
             catch (Exception ex) { Log.Error(ex); }
             return solids;
         }
 
-        private static void CollectSolids(GeometryElement geometry, List<Solid> solids)
+        private static void CollectSolids(GeometryElement geometry, Transform transform, List<Solid> solids)
         {
             foreach (GeometryObject obj in geometry)
             {
                 Solid solid = obj as Solid;
                 if (solid != null)
                 {
-                    try { if (solid.Faces.Size > 0 && solid.Volume > 1e-9) solids.Add(solid); }
+                    try
+                    {
+                        if (solid.Faces.Size > 0 && solid.Volume > 1e-9)
+                        {
+                            Solid hostSolid = transform.IsIdentity ? solid : SolidUtils.CreateTransformed(solid, transform);
+                            if (hostSolid != null && hostSolid.Faces.Size > 0 && hostSolid.Volume > 1e-9)
+                                solids.Add(hostSolid);
+                        }
+                    }
                     catch (Exception ex) { Log.Error(ex); }
                     continue;
                 }
@@ -143,7 +255,7 @@ namespace ElecKit.Commands
                     try
                     {
                         GeometryElement nested = instance.GetInstanceGeometry();
-                        if (nested != null) CollectSolids(nested, solids);
+                        if (nested != null) CollectSolids(nested, transform, solids);
                     }
                     catch (Exception ex) { Log.Error(ex); }
                 }
@@ -154,29 +266,24 @@ namespace ElecKit.Commands
         {
             if (a == null || b == null || a.Count == 0 || b.Count == 0)
                 return "Solid check unavailable - manual review";
-
             bool operationFailed = false;
             foreach (Solid solidA in a)
+            foreach (Solid solidB in b)
             {
-                foreach (Solid solidB in b)
+                try
                 {
-                    try
-                    {
-                        Solid intersection = BooleanOperationsUtils.ExecuteBooleanOperation(
-                            solidA, solidB, BooleanOperationsType.Intersect);
-                        if (intersection != null && intersection.Volume > 1e-9)
-                            return "Solid intersection confirmed";
-                    }
-                    catch (Exception ex)
-                    {
-                        operationFailed = true;
-                        Log.Error(ex);
-                    }
+                    Solid intersection = BooleanOperationsUtils.ExecuteBooleanOperation(
+                        solidA, solidB, BooleanOperationsType.Intersect);
+                    if (intersection != null && intersection.Volume > 1e-9)
+                        return "Solid intersection confirmed";
+                }
+                catch (Exception ex)
+                {
+                    operationFailed = true;
+                    Log.Error(ex);
                 }
             }
-            return operationFailed
-                ? "Solid check incomplete - manual review"
-                : "No positive-volume solid intersection";
+            return operationFailed ? "Solid check incomplete - manual review" : "No positive-volume solid intersection";
         }
 
         private static bool Overlaps(BoundingBoxXYZ a, BoundingBoxXYZ b)
