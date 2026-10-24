@@ -27,7 +27,7 @@ namespace ElecKit.Commands
                 FamilyInstance assigned = null;
                 try { assigned = system.BaseEquipment; } catch { }
                 if (assigned == null) continue;
-                int panelId = assigned.Id.IntegerValue;
+                long panelId = assigned.Id.IntegerValue;
                 double? load = ReadApparentLoadVa(system);
                 if (!panelLoadTotals.ContainsKey(panelId))
                 {
