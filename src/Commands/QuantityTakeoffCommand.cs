@@ -34,13 +34,6 @@ namespace ElecKit.Commands
             BuiltInCategory.OST_PipeFitting
         };
 
-        private sealed class TakeoffRow
-        {
-            public string Category, Family, Type, Level;
-            public int Quantity;
-            public double LengthMm;
-        }
-
         protected override Result Run(ToolContext ctx, ref string message)
         {
             if (ctx.Doc.ActiveView is ViewSchedule)
@@ -61,7 +54,7 @@ namespace ElecKit.Commands
                 ? ElectricalCategories
                 : ElectricalCategories.Concat(AdditionalMepCategories).ToArray();
 
-            var rows = new List<TakeoffRow>();
+            var items = new List<QuantityTakeoffItem>();
             var categoryErrors = new List<string>();
             foreach (BuiltInCategory cat in selectedCategories)
             {
@@ -69,21 +62,19 @@ namespace ElecKit.Commands
                 {
                     var elements = new FilteredElementCollector(ctx.Doc, ctx.Doc.ActiveView.Id)
                         .OfCategory(cat).WhereElementIsNotElementType().ToElements();
-                    foreach (var group in elements.GroupBy(e => new {
-                        Category = LabelUtils.GetLabelFor(cat),
-                        Family = e is FamilyInstance ? (((FamilyInstance)e).Symbol == null ? "" : ((FamilyInstance)e).Symbol.FamilyName) : "",
-                        Type = ctx.Doc.GetElement(e.GetTypeId()) == null ? e.Name : ctx.Doc.GetElement(e.GetTypeId()).Name,
-                        Level = LevelName(ctx.Doc, e)
-                    }))
+                    foreach (Element e in elements)
                     {
-                        double length = 0;
-                        foreach (Element e in group)
-                        {
-                            Parameter p = e.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH);
-                            if (p != null && p.StorageType == StorageType.Double) length += LengthUnits.FeetToMillimetres(p.AsDouble());
-                        }
-                        rows.Add(new TakeoffRow { Category = group.Key.Category, Family = group.Key.Family,
-                            Type = group.Key.Type, Level = group.Key.Level, Quantity = group.Count(), LengthMm = length });
+                        Element typeElement = ctx.Doc.GetElement(e.GetTypeId());
+                        string family = e is FamilyInstance
+                            ? (((FamilyInstance)e).Symbol == null ? "" : ((FamilyInstance)e).Symbol.FamilyName) : "";
+                        string type = typeElement == null ? e.Name : typeElement.Name;
+                        Parameter p = e.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH);
+                        double lengthMm = p != null && p.StorageType == StorageType.Double
+                            ? LengthUnits.FeetToMillimetres(p.AsDouble()) : 0.0;
+                        items.Add(new QuantityTakeoffItem {
+                            Category = LabelUtils.GetLabelFor(cat), Family = family,
+                            Type = type, Level = LevelName(ctx.Doc, e), LengthMm = lengthMm
+                        });
                     }
                 }
                 catch (Exception ex)
@@ -92,6 +83,7 @@ namespace ElecKit.Commands
                     categoryErrors.Add(cat.ToString() + ": " + ex.Message);
                 }
             }
+            IList<QuantityTakeoffGroup> rows = QuantityTakeoffGrouping.Group(items);
             if (rows.Count == 0)
             {
                 string emptyMessage = "No supported elements were found in the active view for the selected scope.";
@@ -108,7 +100,7 @@ namespace ElecKit.Commands
 
             var csv = new StringBuilder();
             csv.AppendLine("Category,Family,Type,Level,Quantity,Total Length (mm)");
-            foreach (var r in rows.OrderBy(x => x.Category).ThenBy(x => x.Family).ThenBy(x => x.Type).ThenBy(x => x.Level))
+            foreach (var r in rows)
                 csv.AppendLine(string.Join(",", Csv.Escape(r.Category), Csv.Escape(r.Family), Csv.Escape(r.Type),
                     Csv.Escape(r.Level), r.Quantity.ToString(CultureInfo.InvariantCulture),
                     r.LengthMm.ToString("0.##", CultureInfo.InvariantCulture)));
