@@ -132,7 +132,9 @@ namespace ElecKit.Commands
                         : "Within requested bounding-box clearance; exact solid distance not calculated";
                     clashes.Add(new[] {
                         items[i].Source, items[i].ElementId, items[i].Category, items[i].Element.Name ?? "",
-                        items[j].Source, items[j].ElementId, items[j].Category, items[j].Element.Name ?? "", method
+                        items[j].Source, items[j].ElementId, items[j].Category, items[j].Element.Name ?? "", method,
+                        LengthUnits.FeetToMillimetres(boxDistance).ToString("0.##", CultureInfo.InvariantCulture),
+                        clearanceMm.ToString("0.##", CultureInfo.InvariantCulture)
                     });
                 }
             }
@@ -157,16 +159,7 @@ namespace ElecKit.Commands
             var csv = new StringBuilder();
             csv.AppendLine("Source A,ElementId A,Category A,Name A,Source B,ElementId B,Category B,Name B,Geometry Check,Bounding Box Distance (mm),Requested Threshold (mm)");
             foreach (string[] row in clashes)
-            {
-                double distanceFeet = BoxDistance(
-                    items.First(x => x.Source == row[0] && x.ElementId == row[1] && x.Category == row[2] && (x.Element.Name ?? "") == row[3]).Box,
-                    items.First(x => x.Source == row[4] && x.ElementId == row[5] && x.Category == row[6] && (x.Element.Name ?? "") == row[7]).Box);
-                string[] output = row.Concat(new[] {
-                    LengthUnits.FeetToMillimetres(distanceFeet).ToString("0.##", CultureInfo.InvariantCulture),
-                    clearanceMm.ToString("0.##", CultureInfo.InvariantCulture)
-                }).ToArray();
-                csv.AppendLine(string.Join(",", output.Select(Csv.Escape)));
-            }
+                csv.AppendLine(string.Join(",", row.Select(Csv.Escape)));
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
             TaskDialog.Show("Clash Review", clashes.Count + " host-host/host-linked/linked-linked bounding-box overlap candidates exported. " +
                 "Positive-volume solid intersections are confirmed where Revit geometry permits; unavailable or failed checks need manual review. " +
