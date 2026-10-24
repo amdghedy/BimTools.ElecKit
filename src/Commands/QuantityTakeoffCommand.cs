@@ -56,12 +56,21 @@ namespace ElecKit.Commands
 
             var items = new List<QuantityTakeoffItem>();
             var categoryErrors = new List<string>();
+            var categoryAudits = new List<CategoryAudit>();
             foreach (BuiltInCategory cat in selectedCategories)
             {
                 try
                 {
                     var elements = new FilteredElementCollector(ctx.Doc, ctx.Doc.ActiveView.Id)
                         .OfCategory(cat).WhereElementIsNotElementType().ToElements();
+                    var audit = new CategoryAudit
+                    {
+                        Category = LabelUtils.GetLabelFor(cat),
+                        ElementsFound = elements.Count,
+                        ElementsWithLength = 0,
+                        TotalLengthMm = 0.0,
+                        Status = "OK"
+                    };
                     foreach (Element e in elements)
                     {
                         Element typeElement = ctx.Doc.GetElement(e.GetTypeId());
@@ -71,16 +80,33 @@ namespace ElecKit.Commands
                         Parameter p = e.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH);
                         double lengthMm = p != null && p.StorageType == StorageType.Double
                             ? LengthUnits.FeetToMillimetres(p.AsDouble()) : 0.0;
+                        if (p != null && p.StorageType == StorageType.Double)
+                        {
+                            audit.ElementsWithLength++;
+                            audit.TotalLengthMm += lengthMm;
+                        }
                         items.Add(new QuantityTakeoffItem {
                             Category = LabelUtils.GetLabelFor(cat), Family = family,
                             Type = type, Level = LevelName(ctx.Doc, e), LengthMm = lengthMm
                         });
                     }
+                    categoryAudits.Add(audit);
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex);
-                    categoryErrors.Add(cat.ToString() + ": " + ex.Message);
+                    string categoryName;
+                    try { categoryName = LabelUtils.GetLabelFor(cat); }
+                    catch { categoryName = cat.ToString(); }
+                    categoryErrors.Add(categoryName + ": " + ex.Message);
+                    categoryAudits.Add(new CategoryAudit
+                    {
+                        Category = categoryName,
+                        ElementsFound = 0,
+                        ElementsWithLength = 0,
+                        TotalLengthMm = 0.0,
+                        Status = "ERROR: " + ex.Message
+                    });
                 }
             }
             IList<QuantityTakeoffGroup> rows = QuantityTakeoffGrouping.Group(items);
@@ -105,7 +131,28 @@ namespace ElecKit.Commands
                     Csv.Escape(r.Level), r.Quantity.ToString(CultureInfo.InvariantCulture),
                     r.LengthMm.ToString("0.##", CultureInfo.InvariantCulture)));
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
-            string summary = rows.Count + " grouped rows exported. Lengths are in millimetres; quantities are instance counts.\n\n" + dlg.FileName;
+
+            string auditPath = Path.Combine(Path.GetDirectoryName(dlg.FileName),
+                Path.GetFileNameWithoutExtension(dlg.FileName) + "_CategoryAudit.csv");
+            var auditCsv = new StringBuilder();
+            auditCsv.AppendLine("Category,Elements Found,Elements With Length,Total Length (mm),Status");
+            foreach (CategoryAudit audit in categoryAudits)
+                auditCsv.AppendLine(string.Join(",",
+                    Csv.Escape(audit.Category),
+                    audit.ElementsFound.ToString(CultureInfo.InvariantCulture),
+                    audit.ElementsWithLength.ToString(CultureInfo.InvariantCulture),
+                    audit.TotalLengthMm.ToString("0.##", CultureInfo.InvariantCulture),
+                    Csv.Escape(audit.Status)));
+            File.WriteAllText(auditPath, auditCsv.ToString(), new UTF8Encoding(true));
+
+            int scannedCount = categoryAudits.Count(a => a.Status == "OK");
+            int elementsFoundTotal = categoryAudits.Where(a => a.Status == "OK").Sum(a => a.ElementsFound);
+            double lengthTotal = categoryAudits.Where(a => a.Status == "OK").Sum(a => a.TotalLengthMm);
+            string summary = rows.Count + " grouped rows exported. Lengths are in millimetres; quantities are instance counts.\n" +
+                "Categories scanned successfully: " + scannedCount + "/" + selectedCategories.Length + "\n" +
+                "Elements found across categories: " + elementsFoundTotal + "\n" +
+                "Sum of reported curve lengths: " + lengthTotal.ToString("0.##", CultureInfo.InvariantCulture) + " mm\n\n" +
+                "Quantity CSV: " + dlg.FileName + "\nCategory audit CSV: " + auditPath;
             if (categoryErrors.Count > 0)
                 summary += "\n\nWARNING: " + categoryErrors.Count + " category scan(s) failed; the export is partial.\n" +
                     string.Join("\n", categoryErrors.Take(10));
@@ -113,6 +160,15 @@ namespace ElecKit.Commands
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
             return categoryErrors.Count > 0 ? Result.Failed : Result.Succeeded;
+        }
+
+        private sealed class CategoryAudit
+        {
+            public string Category;
+            public int ElementsFound;
+            public int ElementsWithLength;
+            public double TotalLengthMm;
+            public string Status;
         }
 
         private static string LevelName(Document doc, Element e)
