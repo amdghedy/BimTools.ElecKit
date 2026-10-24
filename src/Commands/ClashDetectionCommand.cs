@@ -23,7 +23,7 @@ namespace ElecKit.Commands
         private const int MaxElements = 5000;
         private const double MinOverlapFeet = 0.003280839895; // approximately 1 mm
 
-        private static readonly BuiltInCategory[] Categories =
+        private static readonly BuiltInCategory[] MepCategories =
         {
             BuiltInCategory.OST_ElectricalEquipment, BuiltInCategory.OST_ElectricalFixtures,
             BuiltInCategory.OST_LightingFixtures, BuiltInCategory.OST_LightingDevices,
@@ -34,9 +34,13 @@ namespace ElecKit.Commands
             BuiltInCategory.OST_FireAlarmDevices, BuiltInCategory.OST_CommunicationDevices,
             BuiltInCategory.OST_MechanicalEquipment, BuiltInCategory.OST_DuctCurves,
             BuiltInCategory.OST_DuctFitting, BuiltInCategory.OST_PipeCurves,
-            BuiltInCategory.OST_PipeFitting, BuiltInCategory.OST_Walls,
-            BuiltInCategory.OST_Floors, BuiltInCategory.OST_StructuralFraming,
-            BuiltInCategory.OST_StructuralColumns
+            BuiltInCategory.OST_PipeFitting
+        };
+
+        private static readonly BuiltInCategory[] CoordinationCategories =
+        {
+            BuiltInCategory.OST_Walls, BuiltInCategory.OST_Floors,
+            BuiltInCategory.OST_StructuralFraming, BuiltInCategory.OST_StructuralColumns
         };
 
         private sealed class Item
@@ -58,8 +62,24 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
+            var filterDialog = new TaskDialog("Clash Review");
+            filterDialog.MainInstruction = "Choose the category scope for clash screening.";
+            filterDialog.MainContent = "The report identifies bounding-box overlap candidates and checks solid intersections where possible. It does not calculate clearance distances.";
+            filterDialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "MEP systems only",
+                "Electrical, conduit, cable tray, duct and pipe categories.");
+            filterDialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "MEP + architecture / structure",
+                "Also include walls, floors, structural framing and columns.");
+            filterDialog.CommonButtons = TaskDialogCommonButtons.Cancel;
+            TaskDialogResult filterChoice = filterDialog.Show();
+            if (filterChoice != TaskDialogResult.CommandLink1 && filterChoice != TaskDialogResult.CommandLink2)
+                return Result.Cancelled;
+
+            BuiltInCategory[] selectedCategories = filterChoice == TaskDialogResult.CommandLink1
+                ? MepCategories
+                : MepCategories.Concat(CoordinationCategories).ToArray();
+
             var items = new List<Item>();
-            CollectHostItems(ctx.Doc, ctx.Doc.ActiveView, items);
+            CollectHostItems(ctx.Doc, ctx.Doc.ActiveView, items, selectedCategories);
             int linkCount = 0;
             foreach (RevitLinkInstance link in new FilteredElementCollector(ctx.Doc)
                 .OfClass(typeof(RevitLinkInstance)).Cast<RevitLinkInstance>())
@@ -71,7 +91,7 @@ namespace ElecKit.Commands
                     if (linkedDoc == null) continue; // unloaded link
                     Transform transform = link.GetTotalTransform();
                     int before = items.Count;
-                    CollectLinkedItems(linkedDoc, link, transform, items);
+                    CollectLinkedItems(linkedDoc, link, transform, items, selectedCategories);
                     linkCount++;
                     if (items.Count > MaxElements)
                     {
@@ -143,9 +163,9 @@ namespace ElecKit.Commands
             return Result.Succeeded;
         }
 
-        private static void CollectHostItems(Document doc, View view, List<Item> items)
+        private static void CollectHostItems(Document doc, View view, List<Item> items, BuiltInCategory[] categories)
         {
-            foreach (BuiltInCategory category in Categories)
+            foreach (BuiltInCategory category in categories)
             {
                 if (items.Count > MaxElements) return;
                 try
@@ -169,9 +189,9 @@ namespace ElecKit.Commands
             }
         }
 
-        private static void CollectLinkedItems(Document linkedDoc, RevitLinkInstance link, Transform transform, List<Item> items)
+        private static void CollectLinkedItems(Document linkedDoc, RevitLinkInstance link, Transform transform, List<Item> items, BuiltInCategory[] categories)
         {
-            foreach (BuiltInCategory category in Categories)
+            foreach (BuiltInCategory category in categories)
             {
                 if (items.Count > MaxElements) return;
                 try
