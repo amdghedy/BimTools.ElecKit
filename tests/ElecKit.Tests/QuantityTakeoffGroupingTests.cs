@@ -95,6 +95,46 @@ namespace ElecKit.Tests
         }
 
         [Fact]
+        public void PreservesGrandTotalsAcrossManyGroups()
+        {
+            var items = new List<QuantityTakeoffItem>();
+            for (int i = 0; i < 100; i++)
+            {
+                items.Add(Item(i % 2 == 0 ? "Conduit" : "Cable Tray",
+                    "Family " + (i % 5), "Type " + (i % 3), "Level " + (i % 4), i * 1.25));
+            }
+
+            var rows = QuantityTakeoffGrouping.Group(items);
+            Assert.Equal(100, System.Linq.Enumerable.Sum(rows, row => row.Quantity));
+            Assert.Equal(System.Linq.Enumerable.Sum(items, item => item.LengthMm),
+                System.Linq.Enumerable.Sum(rows, row => row.LengthMm), 8);
+        }
+
+        [Fact]
+        public void RejectsOverflowedGroupedLength()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                QuantityTakeoffGrouping.Group(new[] {
+                    Item("Conduit", "Family", "Type", "Level", double.MaxValue),
+                    Item("Conduit", "Family", "Type", "Level", double.MaxValue)
+                }));
+        }
+
+        [Fact]
+        public void SortsGroupsDeterministically()
+        {
+            var rows = QuantityTakeoffGrouping.Group(new[] {
+                Item("Wire", "B", "T", "L", 1),
+                Item("Conduit", "Z", "T", "L", 1),
+                Item("Conduit", "A", "T", "L", 1)
+            });
+            Assert.Equal(new[] { "Conduit", "Conduit", "Wire" },
+                System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(rows, row => row.Category)));
+            Assert.Equal("A", rows[0].Family);
+            Assert.Equal("Z", rows[1].Family);
+        }
+
+        [Fact]
         public void RejectsNullInputAndNullItems()
         {
             Assert.Throws<ArgumentNullException>(() => QuantityTakeoffGrouping.Group(null));
