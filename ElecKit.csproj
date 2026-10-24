@@ -20,13 +20,13 @@
   <PropertyGroup Condition="'$(RevitVersion)' == '2021' Or '$(RevitVersion)' == '2022' Or '$(RevitVersion)' == '2023' Or '$(RevitVersion)' == '2024'">
     <TargetFramework>net48</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026'">
+  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026' Or '$(RevitVersion)' == '2027'">
     <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
 
   <Target Name="ValidateRevitVersion" BeforeTargets="PrepareForBuild"
-          Condition="'$(RevitVersion)' != '2020' And '$(RevitVersion)' != '2021' And '$(RevitVersion)' != '2022' And '$(RevitVersion)' != '2023' And '$(RevitVersion)' != '2024' And '$(RevitVersion)' != '2025' And '$(RevitVersion)' != '2026'">
-    <Error Text="Unsupported RevitVersion '$(RevitVersion)'. Supported build targets are 2020-2026." />
+          Condition="'$(RevitVersion)' != '2020' And '$(RevitVersion)' != '2021' And '$(RevitVersion)' != '2022' And '$(RevitVersion)' != '2023' And '$(RevitVersion)' != '2024' And '$(RevitVersion)' != '2025' And '$(RevitVersion)' != '2026' And '$(RevitVersion)' != '2027'">
+    <Error Text="Unsupported RevitVersion '$(RevitVersion)'. Supported build targets are 2020-2027." />
   </Target>
 
   <ItemGroup>
