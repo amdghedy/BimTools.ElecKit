@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -113,15 +112,12 @@ namespace ElecKit.Commands
             foreach (Element candidate in new FilteredElementCollector(ctx.Doc, ctx.Doc.ActiveView.Id).WhereElementIsNotElementType())
             {
                 if (candidate.Category == null) continue;
-                bool matched = useAnd;
+                var ruleResults = new List<bool>(rules.Count);
                 foreach (FilterRule rule in rules)
-                {
-                    bool current = Matches(candidate, rule);
-                    if (useAnd && !current) { matched = false; break; }
-                    if (!useAnd && current) { matched = true; break; }
-                    if (!useAnd) matched = false;
-                }
-                if (matched) ids.Add(candidate.Id);
+                    ruleResults.Add(Matches(candidate, rule));
+
+                if (SmartFilterLogic.Matches(ruleResults, useAnd))
+                    ids.Add(candidate.Id);
             }
 
             if (ids.Count == 0)
@@ -167,7 +163,7 @@ namespace ElecKit.Commands
 
             Parameter parameter = candidate.LookupParameter(rule.ParameterName);
             return parameter != null && parameter.StorageType == rule.StorageType &&
-                string.Equals(ParameterText(parameter), rule.ParameterValue, StringComparison.OrdinalIgnoreCase);
+                SmartFilterLogic.ValuesEqual(ParameterText(parameter), rule.ParameterValue);
         }
 
         private static string ParameterText(Parameter parameter)
