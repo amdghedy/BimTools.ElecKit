@@ -37,13 +37,15 @@
     <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2020.*" ExcludeAssets="runtime" />
   </ItemGroup>
 
-  <!-- Debug builds copy the add-in into Revit's Addins\2020 folder (close Revit first) -->
-  <Target Name="DeployToRevit" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <ItemGroup>
-      <_AddinFiles Include="$(OutDir)**\*.dll;$(OutDir)**\*.pdb" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" />
+  <!-- Deploy only when the Revit 2020 API is installed. Copy exact outputs and verify expected files. -->
+  <Target Name="DeployToRevit" AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Debug' and '$(HasLocalRevit)' == 'true' and Exists('$(TargetPath)')">
+    <MakeDir Directories="$(RevitAddinsDir)ElecKit" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(RevitAddinsDir)ElecKit\ElecKit.dll" />
     <Copy SourceFiles="$(MSBuildProjectDirectory)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" />
+    <Error Condition="!Exists('$(RevitAddinsDir)ElecKit.addin')" Text="ElecKit deployment failed: manifest was not copied to $(RevitAddinsDir)." />
+    <Error Condition="!Exists('$(RevitAddinsDir)ElecKit\ElecKit.dll')" Text="ElecKit deployment failed: DLL was not copied to $(RevitAddinsDir)ElecKit." />
+    <Message Importance="high" Text="ElecKit deployed to $(RevitAddinsDir); close Revit before rebuilding/replacing a loaded assembly." />
   </Target>
 
 </Project>

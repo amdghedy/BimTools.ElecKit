@@ -122,3 +122,11 @@ GitHub Actions builds the Revit 2020 / .NET Framework 4.7 add-in and runs the Re
 ## Clash review scope
 
 Clash Review screens host-model elements against other host elements and loaded Revit links for supported MEP, structural, wall and floor categories. Linked bounding boxes and solids are transformed into host coordinates. Reports distinguish confirmed positive-volume solid intersections from unavailable/incomplete geometry checks. The command can optionally screen near-misses using a user-entered millimetre threshold; this is an axis-aligned bounding-box distance estimate, not exact solid-to-solid clearance. Exact clearance and live Revit verification remain open. CI build and Revit-independent tests passed for commit [`7a1278d`](https://github.com/amdghedy/BimTools.ElecKit/commit/7a1278db4cdd4062b9f37cf12d60a7d5bac4bb4f); this does not replace testing in a disposable Revit 2020 model. See [ROADMAP.md](ROADMAP.md).
+
+
+### Additional native gap-closure tools
+
+- **Circuit & Panel Audit** — exports conservative voltage, pole-count and explicitly declared VA-capacity checks; missing parameters are flagged for review.
+- **Route Cable Tray** — creates direct or L-shaped routes from ordered anchor picks and rolls back route pairs when a required elbow cannot be created.
+- **Deployment Audit** — checks the Revit 2020 manifest, deployed DLL and loaded assembly hashes.
+- Transaction and command outcomes are logged locally. Live Revit 2020 validation remains a release gate.

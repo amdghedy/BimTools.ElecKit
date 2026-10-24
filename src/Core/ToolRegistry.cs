@@ -121,6 +121,9 @@ namespace ElecKit.Core
               typeof(ExportElementParametersCommand)),
 
             // Circuits
+            T("CircuitPanelAudit", "Circuit & Panel\nAudit", "Circuits",
+              "Audits known circuit/panel voltage, pole-count and explicitly declared VA capacity to CSV. Missing data is flagged for manual review.",
+              typeof(CircuitPanelAuditCommand)),
             T("CircuitReport", "Circuit\nReport", "Circuits",
               "Exports every circuit (panel, circuit number, load name, element count) to a CSV file.",
               typeof(CircuitReportCommand)),
@@ -132,7 +135,13 @@ namespace ElecKit.Core
               typeof(AssignCircuitPanelCommand)),
             T("PanelSingleLineDiagram", "Panel Single-Line\nDiagram", "Circuits",
               "Creates a schematic drafting view for a selected electrical panel, with assigned circuits, load labels and optional CSV data export. Validate ratings and capacity separately.",
-              typeof(PanelSingleLineDiagramCommand))
+              typeof(PanelSingleLineDiagramCommand)),
+            T("RouteCableTray", "Route Cable\nTray", "Wiring",
+              "Pick route anchors in order and create direct or L-shaped cable tray segments at a specified level offset. Each route pair rolls back if its required elbow cannot be created.",
+              typeof(RouteCableTrayCommand)),
+            T("DeploymentAudit", "Deployment\nAudit", "Model",
+              "Checks the Revit 2020 add-in manifest, deployed DLL, loaded assembly path and SHA-256 hashes; saves an audit report.",
+              typeof(DeploymentAuditCommand))
         };
     }
 }

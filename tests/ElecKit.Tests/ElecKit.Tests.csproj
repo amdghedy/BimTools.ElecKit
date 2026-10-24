@@ -20,5 +20,6 @@
     <Compile Include="../../src/Core/BoxClearance.cs" Link="Production/BoxClearance.cs" />
     <Compile Include="../../src/Core/QuantityTakeoffGrouping.cs" Link="Production/QuantityTakeoffGrouping.cs" />
     <Compile Include="../../src/Core/SmartFilterLogic.cs" Link="Production/SmartFilterLogic.cs" />
+    <Compile Include="../../src/Core/CircuitPanelValidation.cs" Link="Production/CircuitPanelValidation.cs" />
   </ItemGroup>
 </Project>

@@ -78,3 +78,14 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - Handles internal units and user-facing units correctly.
 - Has a short manual test checklist and evidence of the result in Revit.
 - Is reflected in the README and this roadmap with an honest status.
+
+
+## Native gap-closure implementation — feature branch 2026-10-24
+
+- [x] Circuit preflight blocks known voltage/pole-count mismatches and known load-over-capacity conflicts where explicitly named comparable VA/kVA data exists. Missing ratings are warnings, not verified-safe results.
+- [x] Circuit & Panel Audit exports per-circuit values and PASS/FAIL/REVIEW findings. This is a conservative parameter-based screen, not a substitute for protection, phase-balance, short-circuit or code calculations.
+- [x] Route Cable Tray creates direct or L-shaped tray routes between ordered picked anchors; a route pair rolls back if its required elbow cannot be created.
+- [x] Transaction and command start/end/failure/rollback/commit outcomes are written to the local ElecKit log.
+- [x] Deployment Audit compares the Revit 2020 manifest, deployed DLL, loaded assembly path and SHA-256 hashes. Debug deployment copies the exact assembly and verifies outputs.
+- [x] Revit-independent circuit validation regression tests added to CI.
+- [ ] Revit 2020 integration checks remain mandatory for API behavior, connector geometry, fitting routing preferences, project-specific panel parameter mapping and deployment state.

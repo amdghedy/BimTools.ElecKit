@@ -14,8 +14,11 @@ namespace ElecKit.Core
         {
             try
             {
-                Log.Info("Run " + GetType().Name);
-                return Run(new ToolContext(commandData), ref message);
+                Log.Info("COMMAND START name=" + GetType().FullName);
+                Result result = Run(new ToolContext(commandData), ref message);
+                Log.Info("COMMAND END name=" + GetType().FullName + " result=" + result +
+                    (string.IsNullOrWhiteSpace(message) ? "" : " message=" + message));
+                return result;
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)
             {
@@ -23,7 +26,7 @@ namespace ElecKit.Core
             }
             catch (Exception ex)
             {
-                Log.Error(ex);
+                Log.Error(new InvalidOperationException("COMMAND FAILED name=" + GetType().FullName, ex));
                 message = ex.Message;
                 return Result.Failed;
             }
