@@ -96,7 +96,7 @@ namespace ElecKit.Core
               typeof(AssignWorksetCommand)),
 
             T("SmartFilter", "Smart\nFilter", "Model",
-              "Pick an element and select matching instances by type or category in the active view. Selection only; no model changes.",
+              "Pick an element and select matching instances by type, category, or exact parameter value in the active view. Selection only; no model changes.",
               typeof(SmartFilterCommand)),
 
             T("ClashDetection", "Clash\nReview", "Model",
