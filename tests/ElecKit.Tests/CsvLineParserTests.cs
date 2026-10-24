@@ -34,6 +34,13 @@ namespace ElecKit.Tests
         }
 
         [Fact]
+        public void EscapingAndParsingRoundTripSpecialCharacters()
+        {
+            string original = "Panel, \\"A\\"\\r\\nLevel";
+            Assert.Equal(original, CsvLineParser.Parse(Csv.Escape(original))[0]);
+        }
+
+        [Fact]
         public void RejectsUnterminatedQuotedField()
         {
             Assert.Throws<FormatException>(() => CsvLineParser.Parse("1,\"unfinished"));
