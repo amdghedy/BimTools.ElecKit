@@ -69,11 +69,6 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
-            XYZ branchCorner = horizontalMain
-                ? new XYZ(tee.X, branchEnd.Y, z)
-                : new XYZ(branchEnd.X, tee.Y, z);
-            bool needsElbow = branchCorner.DistanceTo(branchEnd) >= MinLegFeet &&
-                branchCorner.DistanceTo(tee) >= MinLegFeet;
             var types = new FilteredElementCollector(ctx.Doc).OfClass(typeof(CableTrayType))
                 .Cast<CableTrayType>().OrderBy(t => t.Name).ToList();
             if (types.Count == 0) { TaskDialog.Show("Cable Tray Branch Layout", "No cable tray types exist in this project."); return Result.Cancelled; }
@@ -94,8 +89,6 @@ namespace ElecKit.Commands
             mainEnd = new XYZ(mainEnd.X, mainEnd.Y, z + lift);
             branchEnd = new XYZ(branchEnd.X, branchEnd.Y, z + lift);
             tee = new XYZ(tee.X, tee.Y, z + lift);
-            branchCorner = new XYZ(branchCorner.X, branchCorner.Y, z + lift);
-
             string failure = null;
             ctx.Transact("Create cable tray branch layout", () =>
             {
@@ -106,19 +99,7 @@ namespace ElecKit.Commands
                     {
                         CableTray mainA = CableTray.Create(ctx.Doc, types[typeIndex].Id, mainStart, tee, level.Id);
                         CableTray mainB = CableTray.Create(ctx.Doc, types[typeIndex].Id, tee, mainEnd, level.Id);
-                        CableTray branchLast;
-                        if (needsElbow)
-                        {
-                            CableTray branchFirst = CableTray.Create(ctx.Doc, types[typeIndex].Id, branchEnd, branchCorner, level.Id);
-                            branchLast = CableTray.Create(ctx.Doc, types[typeIndex].Id, branchCorner, tee, level.Id);
-                            Connector elbowA = Nearest(branchFirst, branchCorner), elbowB = Nearest(branchLast, branchCorner);
-                            if (elbowA == null || elbowB == null) throw new InvalidOperationException("Branch elbow connectors were not found.");
-                            ctx.Doc.Create.NewElbowFitting(elbowA, elbowB);
-                        }
-                        else
-                        {
-                            branchLast = CableTray.Create(ctx.Doc, types[typeIndex].Id, branchEnd, tee, level.Id);
-                        }
+                        CableTray branchLast = CableTray.Create(ctx.Doc, types[typeIndex].Id, branchEnd, tee, level.Id);
                         Connector mainConnectorA = Nearest(mainA, tee);
                         Connector mainConnectorB = Nearest(mainB, tee);
                         Connector branchConnector = Nearest(branchLast, tee);
@@ -141,8 +122,7 @@ namespace ElecKit.Commands
                     "\n\nCheck routing preferences, connector positions and tray type.");
                 return Result.Failed;
             }
-            TaskDialog.Show("Cable Tray Branch Layout", "Main run, branch " + (needsElbow ? "with elbow" : "straight") +
-                " and tee fitting created. Verify route clearances, connector continuity and tray sizing in Revit.");
+            TaskDialog.Show("Cable Tray Branch Layout", "Straight main run, perpendicular branch and tee fitting created. Verify route clearances, connector continuity and tray sizing in Revit.");
             return Result.Succeeded;
         }
 

@@ -69,7 +69,7 @@ namespace ElecKit.Core
               "Turns connected plan detail-line chains into cable tray runs with elbows; a required fitting failure rolls back the complete run.",
               typeof(BoundaryToCableTraysCommand)),
             T("CableTrayBranchLayout", "Cable Tray\nBranch Layout", "Wiring",
-              "Picks main-run start/end and branch endpoint, creates an orthogonal T branch, required elbow and tee in one rollback-safe operation.",
+              "Picks main-run start/end and branch endpoint, creates a perpendicular T branch and tee in one rollback-safe operation.",
               typeof(CableTrayBranchLayoutCommand)),
             T("CableTrayRiser", "Cable Tray\nRiser", "Wiring",
               "Creates a vertical cable-tray segment between two vertically aligned points picked in a 3D view.",
