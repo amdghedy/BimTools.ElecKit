@@ -52,8 +52,8 @@ Source: "..\artifacts\Revit2025\ElecKit.addin"; DestDir: "{userappdata}\Autodesk
 Source: "..\artifacts\Revit2026\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2026\ElecKit"; Flags: ignoreversion; Tasks: revit2026
 Source: "..\artifacts\Revit2026\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2026"; Flags: ignoreversion; Tasks: revit2026
 
-Source: "..\\artifacts\\Revit2027\\ElecKit.dll"; DestDir: "{userappdata}\\Autodesk\\Revit\\Addins\\2027\\ElecKit"; Flags: ignoreversion; Tasks: revit2027
-Source: "..\\artifacts\\Revit2027\\ElecKit.addin"; DestDir: "{userappdata}\\Autodesk\\Revit\\Addins\\2027"; Flags: ignoreversion; Tasks: revit2027
+Source: "..\artifacts\Revit2027\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2027\ElecKit"; Flags: ignoreversion; Tasks: revit2027
+Source: "..\artifacts\Revit2027\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2027"; Flags: ignoreversion; Tasks: revit2027
 
 [Code]
 function InitializeSetup(): Boolean;
