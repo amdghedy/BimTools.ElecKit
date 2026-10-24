@@ -42,6 +42,7 @@ namespace ElecKit.Commands
             public Element Element;
             public BoundingBoxXYZ Box;
             public string Category;
+            public List<Solid> Solids;
         }
 
         protected override Result Run(ToolContext ctx, ref string message)
@@ -59,7 +60,7 @@ namespace ElecKit.Commands
                     {
                         BoundingBoxXYZ box = e.get_BoundingBox(ctx.Doc.ActiveView);
                         if (box == null) continue;
-                        items.Add(new Item { Element = e, Box = box, Category = LabelUtils.GetLabelFor(cat) });
+                        items.Add(new Item { Element = e, Box = box, Category = LabelUtils.GetLabelFor(cat), Solids = GetSolids(e) });
                     }
                 }
                 catch (Exception ex) { Log.Error(ex); }
@@ -82,9 +83,10 @@ namespace ElecKit.Commands
                     if (Overlaps(items[i].Box, items[j].Box))
                     {
                         Element a = items[i].Element, b = items[j].Element;
+                        string method = SolidIntersectionStatus(items[i].Solids, items[j].Solids);
                         clashes.Add(new[] {
                             a.Id.IntegerValue.ToString(CultureInfo.InvariantCulture), items[i].Category, a.Name ?? "",
-                            b.Id.IntegerValue.ToString(CultureInfo.InvariantCulture), items[j].Category, b.Name ?? ""
+                            b.Id.IntegerValue.ToString(CultureInfo.InvariantCulture), items[j].Category, b.Name ?? "", method
                         });
                     }
                 }
@@ -99,14 +101,82 @@ namespace ElecKit.Commands
             if (dlg.ShowDialog() != true) return Result.Cancelled;
 
             var csv = new StringBuilder();
-            csv.AppendLine("ElementId A,Category A,Name A,ElementId B,Category B,Name B,Detection Method");
+            csv.AppendLine("ElementId A,Category A,Name A,ElementId B,Category B,Name B,Geometry Check");
             foreach (string[] row in clashes)
-                csv.AppendLine(string.Join(",", row.Select(Csv.Escape).Concat(new[] { Csv.Escape("Bounding-box overlap candidate; verify exact geometry") })));
+                csv.AppendLine(string.Join(",", row.Select(Csv.Escape)));
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
             TaskDialog.Show("Clash Review", clashes.Count + " bounding-box overlap candidates exported. This is a screening report, not a confirmed solid-clash report.\n\n" + dlg.FileName);
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
             return Result.Succeeded;
+        }
+
+
+        private static List<Solid> GetSolids(Element element)
+        {
+            var solids = new List<Solid>();
+            try
+            {
+                var options = new Options { ComputeReferences = false, DetailLevel = ViewDetailLevel.Fine };
+                GeometryElement geometry = element.get_Geometry(options);
+                if (geometry != null) CollectSolids(geometry, solids);
+            }
+            catch (Exception ex) { Log.Error(ex); }
+            return solids;
+        }
+
+        private static void CollectSolids(GeometryElement geometry, List<Solid> solids)
+        {
+            foreach (GeometryObject obj in geometry)
+            {
+                Solid solid = obj as Solid;
+                if (solid != null)
+                {
+                    try { if (solid.Faces.Size > 0 && solid.Volume > 1e-9) solids.Add(solid); }
+                    catch (Exception ex) { Log.Error(ex); }
+                    continue;
+                }
+
+                GeometryInstance instance = obj as GeometryInstance;
+                if (instance != null)
+                {
+                    try
+                    {
+                        GeometryElement nested = instance.GetInstanceGeometry();
+                        if (nested != null) CollectSolids(nested, solids);
+                    }
+                    catch (Exception ex) { Log.Error(ex); }
+                }
+            }
+        }
+
+        private static string SolidIntersectionStatus(List<Solid> a, List<Solid> b)
+        {
+            if (a == null || b == null || a.Count == 0 || b.Count == 0)
+                return "Solid check unavailable - manual review";
+
+            bool operationFailed = false;
+            foreach (Solid solidA in a)
+            {
+                foreach (Solid solidB in b)
+                {
+                    try
+                    {
+                        Solid intersection = BooleanOperationsUtils.ExecuteBooleanOperation(
+                            solidA, solidB, BooleanOperationsType.Intersect);
+                        if (intersection != null && intersection.Volume > 1e-9)
+                            return "Solid intersection confirmed";
+                    }
+                    catch (Exception ex)
+                    {
+                        operationFailed = true;
+                        Log.Error(ex);
+                    }
+                }
+            }
+            return operationFailed
+                ? "Solid check incomplete - manual review"
+                : "No positive-volume solid intersection";
         }
 
         private static bool Overlaps(BoundingBoxXYZ a, BoundingBoxXYZ b)
