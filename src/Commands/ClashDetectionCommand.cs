@@ -14,8 +14,8 @@ using ElecKit.Core;
 namespace ElecKit.Commands
 {
     /// <summary>
-    /// Reports possible clashes from intersecting element bounding boxes in the active view.
-    /// These are candidates for review, not proof of exact solid intersection.
+    /// Screens bounding-box overlap candidates and checks solid intersection when usable element solids are available.
+    /// Linked models are not included; geometry failures remain explicitly marked for manual review.
     /// </summary>
     [Transaction(TransactionMode.ReadOnly)]
     public class ClashDetectionCommand : ElecCommand
@@ -105,7 +105,7 @@ namespace ElecKit.Commands
             foreach (string[] row in clashes)
                 csv.AppendLine(string.Join(",", row.Select(Csv.Escape)));
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
-            TaskDialog.Show("Clash Review", clashes.Count + " bounding-box overlap candidates exported. This is a screening report, not a confirmed solid-clash report.\n\n" + dlg.FileName);
+            TaskDialog.Show("Clash Review", clashes.Count + " bounding-box overlap candidates exported. The CSV distinguishes confirmed positive-volume solid intersections from no-intersection results and cases requiring manual review. Linked models are not included.\n\n" + dlg.FileName);
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
             return Result.Succeeded;
