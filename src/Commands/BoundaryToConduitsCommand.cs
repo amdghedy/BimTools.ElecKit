@@ -57,7 +57,7 @@ namespace ElecKit.Commands
             if (!ConduitPrompt.TryAsk(ctx.Doc, "Boundary to Conduits", out type, out offsetMm)) return Result.Cancelled;
 
             Level level = plan.GenLevel;
-            double z = level.Elevation + Units.MmToFeet(offsetMm);
+            double z = level.Elevation + UnitConv.MmToFeet(offsetMm);
 
             var lines = sources.Select(s => (Line)s.GeometryCurve).ToList();
             List<List<XYZ>> chains = LineChains.Build(lines, JoinToleranceFeet);

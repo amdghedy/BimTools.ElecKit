@@ -41,12 +41,12 @@ namespace ElecKit.Commands
             }
 
             string file = Path.Combine(
-                Settings.Current.ResolveReportFolder(),
+                ElecSettings.Current.ResolveReportFolder(),
                 "CircuitReport_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv");
             File.WriteAllText(file, sb.ToString(), new UTF8Encoding(true));
 
             TaskDialog.Show("Circuit Report", systems.Count + " circuits exported to:\n" + file);
-            if (!Settings.Current.DoNotOpenReports) Process.Start(file);
+            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(file);
             return Result.Succeeded;
         }
     }

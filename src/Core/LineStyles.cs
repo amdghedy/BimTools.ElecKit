@@ -35,13 +35,13 @@ namespace ElecKit.Core
             var names = new List<string> { "(default line style)" };
             names.AddRange(all.Select(s => s.Name));
 
-            int last = string.IsNullOrEmpty(Settings.Current.LastLineStyle) ? 0 : names.IndexOf(Settings.Current.LastLineStyle);
+            int last = string.IsNullOrEmpty(ElecSettings.Current.LastLineStyle) ? 0 : names.IndexOf(ElecSettings.Current.LastLineStyle);
             int index = Dialogs.Choose(title, "Line style for the new detail lines:", names, Math.Max(last, 0));
             if (index < 0) return false;
 
             style = index == 0 ? null : all[index - 1];
-            Settings.Current.LastLineStyle = index == 0 ? null : names[index];
-            Settings.Current.Save();
+            ElecSettings.Current.LastLineStyle = index == 0 ? null : names[index];
+            ElecSettings.Current.Save();
             return true;
         }
     }

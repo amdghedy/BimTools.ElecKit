@@ -54,7 +54,7 @@ namespace ElecKit.Commands
 
             var plan = ctx.Doc.ActiveView as ViewPlan;
             Level planLevel = plan != null ? plan.GenLevel : null;
-            double offsetFeet = Units.MmToFeet(offsetMm);
+            double offsetFeet = UnitConv.MmToFeet(offsetMm);
 
             int created = 0, arcs = 0, tooShort = 0, needsPlan = 0, failed = 0;
             var converted = new List<ElementId>();

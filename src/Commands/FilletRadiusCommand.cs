@@ -12,19 +12,19 @@ namespace ElecKit.Commands
             string answer = Dialogs.Ask(
                 "Fillet Radius",
                 "Default fillet radius in millimetres (used by the fillet tools):",
-                Units.Format(Settings.Current.EffectiveFilletRadiusMm));
+                UnitConv.Format(ElecSettings.Current.EffectiveFilletRadiusMm));
             if (answer == null) return Result.Cancelled;
 
             double mm;
-            if (!Units.TryParseNumber(answer, out mm) || mm <= 0)
+            if (!UnitConv.TryParseNumber(answer, out mm) || mm <= 0)
             {
                 TaskDialog.Show("Fillet Radius", "Enter a number greater than zero.");
                 return Result.Cancelled;
             }
 
-            Settings.Current.FilletRadiusMm = mm;
-            Settings.Current.Save();
-            TaskDialog.Show("Fillet Radius", "Default fillet radius is now " + Units.Format(mm) + " mm.");
+            ElecSettings.Current.FilletRadiusMm = mm;
+            ElecSettings.Current.Save();
+            TaskDialog.Show("Fillet Radius", "Default fillet radius is now " + UnitConv.Format(mm) + " mm.");
             return Result.Succeeded;
         }
     }

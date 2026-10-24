@@ -28,7 +28,7 @@ namespace ElecKit.Commands
             }
 
             string folder = Path.Combine(
-                Settings.Current.ResolveReportFolder(),
+                ElecSettings.Current.ResolveReportFolder(),
                 "Schedules_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
             Directory.CreateDirectory(folder);
 
@@ -52,7 +52,7 @@ namespace ElecKit.Commands
             if (failed.Count > 0) text += "\n\nSkipped (see log):\n" + string.Join("\n", failed);
             TaskDialog.Show("Export All Schedules", text);
 
-            if (!Settings.Current.DoNotOpenReports) Process.Start(folder);
+            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(folder);
             return Result.Succeeded;
         }
     }

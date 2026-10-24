@@ -50,7 +50,7 @@ namespace ElecKit.Commands
             if (shape < 0) return Result.Cancelled;
 
             Level level = plan.GenLevel;
-            double z = level.Elevation + Units.MmToFeet(offsetMm);
+            double z = level.Elevation + UnitConv.MmToFeet(offsetMm);
             var points = new List<XYZ>();
             foreach (Reference r in picked)
             {

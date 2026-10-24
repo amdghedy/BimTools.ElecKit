@@ -45,7 +45,7 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
-            double radius = Units.MmToFeet(Settings.Current.EffectiveFilletRadiusMm);
+            double radius = UnitConv.MmToFeet(ElecSettings.Current.EffectiveFilletRadiusMm);
             var geometry = elements.Select(c => (Line)c.GeometryCurve).ToArray();
             var usedEnds = new HashSet<string>();
             var problems = new Dictionary<string, int>();
@@ -90,7 +90,7 @@ namespace ElecKit.Commands
                 }
             });
 
-            string text = made + " corner(s) filleted at " + Units.Format(Settings.Current.EffectiveFilletRadiusMm) + " mm.";
+            string text = made + " corner(s) filleted at " + UnitConv.Format(ElecSettings.Current.EffectiveFilletRadiusMm) + " mm.";
             if (problems.Count > 0)
                 text += "\n\nSkipped:\n" + string.Join("\n", problems.Select(p => "- " + p.Key + " (" + p.Value + ")"));
             TaskDialog.Show("Fillet Corners", text);
