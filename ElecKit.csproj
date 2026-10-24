@@ -37,7 +37,7 @@
     <ItemGroup>
       <_AddinFiles Include="$(OutDir)**\*.dll;$(OutDir)**\*.pdb" />
     </ItemGroup>
-    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" ContinueOnError="true" />
+    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" />
     <Copy SourceFiles="$(MSBuildProjectDirectory)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" />
   </Target>
 
