@@ -91,6 +91,10 @@ namespace ElecKit.Core
               "Exports the open schedule view to a single CSV file.",
               typeof(ExportActiveScheduleCommand)),
 
+            T("AssignWorkset", "Assign\nWorkset", "Model",
+              "Assigns selected model instances to an existing user workset in a workshared document and reports elements that cannot be changed.",
+              typeof(AssignWorksetCommand)),
+
             T("SmartFilter", "Smart\nFilter", "Model",
               "Pick an element and select matching instances by type or category in the active view. Selection only; no model changes.",
               typeof(SmartFilterCommand)),
