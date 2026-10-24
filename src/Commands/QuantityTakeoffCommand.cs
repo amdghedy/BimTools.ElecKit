@@ -57,7 +57,7 @@ namespace ElecKit.Commands
                         foreach (Element e in group)
                         {
                             Parameter p = e.get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH);
-                            if (p != null && p.StorageType == StorageType.Double) length += p.AsDouble() * 304.8;
+                            if (p != null && p.StorageType == StorageType.Double) length += LengthUnits.FeetToMillimetres(p.AsDouble());
                         }
                         rows.Add(new TakeoffRow { Category = group.Key.Category, Family = group.Key.Family,
                             Type = group.Key.Type, Level = group.Key.Level, Quantity = group.Count(), LengthMm = length });
