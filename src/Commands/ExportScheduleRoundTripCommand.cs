@@ -24,6 +24,7 @@ namespace ElecKit.Commands
         {
             public int ParameterId;
             public string Name;
+            public bool IsTypeParameter;
         }
 
         protected override Result Run(ToolContext ctx, ref string message)
@@ -32,6 +33,11 @@ namespace ElecKit.Commands
             if (schedule == null || schedule.IsTemplate)
             {
                 TaskDialog.Show("Export Schedule Round-Trip", "Open a non-template schedule view first.");
+                return Result.Cancelled;
+            }
+            if (schedule.Definition.CategoryId == ElementId.InvalidElementId)
+            {
+                TaskDialog.Show("Export Schedule Round-Trip", "Multi-category schedules are not supported in this round-trip mode. Use a single-category itemized schedule.");
                 return Result.Cancelled;
             }
             if (!schedule.Definition.IsItemized)
@@ -62,11 +68,23 @@ namespace ElecKit.Commands
                 }
 
                 ElementId parameterId;
-                try { parameterId = field.GetSchedulableField().ParameterId; }
+                ScheduleFieldType fieldType;
+                try
+                {
+                    SchedulableField schedulable = field.GetSchedulableField();
+                    parameterId = schedulable.ParameterId;
+                    fieldType = schedulable.FieldType;
+                }
                 catch (Exception)
                 {
                     TaskDialog.Show("Export Schedule Round-Trip",
                         "The schedule field '" + field.GetName() + "' is not directly parameter-backed and cannot be round-tripped.");
+                    return Result.Cancelled;
+                }
+                if (fieldType != ScheduleFieldType.Instance && fieldType != ScheduleFieldType.ElementType)
+                {
+                    TaskDialog.Show("Export Schedule Round-Trip",
+                        "The schedule field '" + field.GetName() + "' is not a direct instance/type parameter field.");
                     return Result.Cancelled;
                 }
                 if (parameterId == null || parameterId == ElementId.InvalidElementId ||
@@ -77,7 +95,12 @@ namespace ElecKit.Commands
                         "'). Remove duplicate/unsupported fields and retry.");
                     return Result.Cancelled;
                 }
-                columns.Add(new Column { ParameterId = parameterId.IntegerValue, Name = field.GetName() });
+                columns.Add(new Column
+                {
+                    ParameterId = parameterId.IntegerValue,
+                    Name = field.GetName(),
+                    IsTypeParameter = fieldType == ScheduleFieldType.ElementType
+                });
             }
             if (columns.Count == 0)
             {
@@ -99,7 +122,10 @@ namespace ElecKit.Commands
                     "Revit could not enumerate the elements represented by this schedule. No CSV was written.\n\n" + ex.Message);
                 return Result.Failed;
             }
-            elements = elements.OrderBy(e => e.Id.IntegerValue).ToList();
+            elements = elements
+                .Where(e => e.Category != null && e.Category.Id.IntegerValue == schedule.Definition.CategoryId.IntegerValue)
+                .OrderBy(e => e.Id.IntegerValue)
+                .ToList();
             if (elements.Count == 0)
             {
                 TaskDialog.Show("Export Schedule Round-Trip",
@@ -120,7 +146,8 @@ namespace ElecKit.Commands
             var csv = new StringBuilder();
             csv.Append("__ElementId");
             foreach (Column column in columns)
-                csv.Append(",").Append(Csv.Escape("__PARAMID_" + column.ParameterId.ToString(CultureInfo.InvariantCulture) + "__" + column.Name));
+                csv.Append(",").Append(Csv.Escape("__PARAMID_" + column.ParameterId.ToString(CultureInfo.InvariantCulture) +
+                    (column.IsTypeParameter ? "__TYPE__" : "__INSTANCE__") + column.Name));
             csv.AppendLine();
 
             foreach (Element element in elements)
@@ -128,7 +155,10 @@ namespace ElecKit.Commands
                 csv.Append(element.Id.IntegerValue.ToString(CultureInfo.InvariantCulture));
                 foreach (Column column in columns)
                 {
-                    Parameter parameter = element.get_Parameter(new ElementId(column.ParameterId));
+                    Element parameterOwner = column.IsTypeParameter
+                        ? ctx.Doc.GetElement(element.GetTypeId())
+                        : element;
+                    Parameter parameter = parameterOwner == null ? null : parameterOwner.get_Parameter(new ElementId(column.ParameterId));
                     string value = "";
                     if (parameter != null)
                     {
