@@ -6,7 +6,7 @@ ElecKit is the focused, public electrical productivity add-in targeting Revit 20
 
 ## Current ElecKit baseline
 
-The main branch contains 25 command classes:
+The main branch contains 26 command classes:
 
 | Area | Implemented commands |
 |---|---|
@@ -31,7 +31,7 @@ The following capabilities exist as named commands or command groups in ElecTool
 | P1 | Circuit and panel tools | `NewToolsCircuits.cs`, `AssignCircuitNumberCommand.cs`, `PanelSLDCommand.cs` | Validate circuit/panel relationships; report skipped items; never silently change circuit assignments. |
 | P1 | Conduit and cable-tray workflows | `NewToolsConduit.cs`, `NewToolsTray.cs`, `CableConduitCommand.cs`, `CableTrayCommand.cs`, `DrawCableTrayCommand.cs` | Validate routing inputs, sizes and fittings; report failed segments; preserve user control of type and level. |
 | P2 | Workset assignment | `AssignToTypeWorksetCommand.cs` | Preview affected elements, require a valid workshared document and target workset, and report per-element failures. |
-| P2 | Smart filtering | `SmartFilterCommand.cs` | Filter by category, type and parameter; show the match count; offer select/isolate without modifying model data. |
+| P2 | Smart filtering | `SmartFilterCommand.cs` | **Partially implemented.** Pick an element and select same-type or same-category instances in the active view. Parameter-based filters and isolate controls remain open. |
 | P2 | Parameter management | `SharedParamsCommand.cs` | Validate shared-parameter definitions and bindings; preserve existing bindings; explain conflicts before applying changes. |
 | P2 | Family type manager | `FamilyTypeManagerCommand.cs` | Show available types, validate type compatibility, and report elements that could not be changed. |
 | P2 | Junction-box placement and alignment | `AddJunctionBoxCommand.cs`, `AlignToFamilyCommand.cs`, `ConnectToElementCommand.cs` | Validate host/connector compatibility, use explicit pick prompts, and roll back cleanly on failure. |
