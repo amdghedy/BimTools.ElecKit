@@ -1,145 +1,192 @@
 # ElecKit
 
-**An electrical productivity add-in for Autodesk Revit 2020–2027.**
+**Electrical productivity tools for Autodesk Revit — one toolkit, version-specific builds.**
 
-ElecKit brings frequently used electrical drafting, wiring, model-selection, and schedule export/import tasks into a single ribbon. It is designed to reduce repetitive work while keeping tools close to the Revit workflow.
+ElecKit brings common electrical drafting, wiring, model-selection, schedule-data, quantity-takeoff, and coordination workflows into a dedicated Revit ribbon. The goal is to reduce repetitive clicks, make routine tasks more consistent, and provide clearer feedback when model operations cannot be completed.
 
-[![Build](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build.yml) [![Revit](https://img.shields.io/badge/Revit-2020-2D6DB5)](https://www.autodesk.com/products/revit/overview) [![Platform](https://img.shields.io/badge/platform-Windows-0078D4)](https://www.microsoft.com/windows)
+<p align="center">
+  <img src="https://img.shields.io/badge/Revit-2020--2027-2D6DB5?style=for-the-badge" alt="Revit 2020–2027 target versions">
+  <img src="https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge" alt="Windows">
+  <img src="https://img.shields.io/badge/Language-C%23-68217A?style=for-the-badge" alt="C sharp">
+</p>
 
-> **Project status:** Active development. CI checks compilation; individual commands still require functional verification inside Revit. See [ROADMAP.md](ROADMAP.md) for implemented and planned tools.
+<p align="center">
+  <a href="https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build-all-versions.yml"><img src="https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build-all-versions.yml/badge.svg?branch=feature/native-gap-closure-2026" alt="Build all Revit versions workflow"></a>
+  <a href="https://github.com/amdghedy/BimTools.ElecKit/issues"><img src="https://img.shields.io/github/issues/amdghedy/BimTools.ElecKit" alt="GitHub issues"></a>
+  <a href="https://github.com/amdghedy/BimTools.ElecKit/blob/feature/native-gap-closure-2026/LICENSE"><img src="https://img.shields.io/badge/License-see%20repository-lightgrey" alt="License"></a>
+</p>
 
-## Contents
-- [Features](#features)
-- [Compatibility](#compatibility)
-- [Install and run](#install-and-run)
-- [Build from source](#build-from-source)
-- [Ribbon tools](#ribbon-tools)
-- [Configuration and logs](#configuration-and-logs)
-- [Add a command](#add-a-command)
-- [Known limitations](#known-limitations)
-- [Contributing and support](#contributing-and-support)
+> **Development status:** Active development. GitHub Actions builds version-specific packages and runs Revit-independent tests. A successful compile is not a substitute for testing the commands in each supported Revit installation. Treat the current multi-version build and installer as release candidates until all CI jobs pass and the live-model checklist is completed.
 
-## Features
-- **Drafting conversion:** convert supported CAD geometry and detail lines to Revit detail lines or electrical wires.
-- **Line cleanup and editing:** connect runs, split lines, fillet corners or picked lines, and clean duplicate detail-line geometry.
-- **Wiring workflows:** create home-run lines, create conduits from boundary lines, place circuit-number text, and copy wire information into conduit comments.
-- **Model navigation and coordination:** select host elements, select same-type instances, use Smart Filter to select same-type, same-category, or same-parameter-value elements in the active view, assign selected elements to a user workset in a workshared model, create a 3D view around a selection, and export MEP clash candidates with solid-intersection checks where geometry is available.
-- **Schedule and circuit data:** export active or multiple schedules to CSV, export selected element parameters to a keyed CSV (ElementId and Mark), import parameter values from that CSV, create circuit reports, and select elements by circuit.\n- **Electrical quantity takeoff:** export grouped counts and MEP curve lengths from the active model view to CSV. The grouping/aggregation logic has a Revit-independent regression suite; category-by-category behavior still requires a Revit 2020 test model.
-- **Central command registry:** ribbon tools are registered centrally rather than wired individually.
+## Quick links
 
-Feature names describe intended workflows; availability and behavior can vary by selection, view, model content, and Revit API constraints.
+- **[Latest GitHub Actions runs](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build-all-versions.yml)**
+- **[Pull request / current development](https://github.com/amdghedy/BimTools.ElecKit/pull/2)**
+- **[Feature roadmap](ROADMAP.md)**
+- **[Revit 2020 validation checklist](docs/REVIT2020_VALIDATION_CHECKLIST.md)**
+- **[Report a bug or request a feature](https://github.com/amdghedy/BimTools.ElecKit/issues)**
 
-## Compatibility
-| Requirement | Target |
-|---|---|
-| Host application | Autodesk Revit 2020 |
-| Runtime target | .NET Framework 4.7 |
-| Architecture | Windows / x64 |
-| Recommended IDE | Visual Studio 2022 |
-| CI | GitHub Actions |
+## What ElecKit helps with
 
-Revit must be installed to run the add-in. CI uses version-matched Revit API NuGet packages to compile without requiring a full Revit installation on the runner. Build outputs are version-specific; a DLL built for one Revit API version must not be reused for another.
+### Drafting and line conversion
+- Convert supported CAD/detail geometry to Revit detail lines or electrical wires.
+- Connect runs, split lines, fillet supported corners, and clean duplicate detail-line geometry.
+- Convert supported lines into conduit or cable-tray routes.
 
-## Repository folders
+### Wiring and electrical workflows
+- Create home-run lines and circuit-number text.
+- Create conduit or cable-tray runs from supported boundaries.
+- Copy wire information into conduit comments and access cable-catalog workflows.
+- Audit available circuit voltage, pole-count, and explicitly declared panel-capacity information; uncertain or missing data should be reviewed rather than treated as a pass.
 
-- `RevitVersions/` — version-specific Revit 2020–2027 build packages generated by CI.
-- `OtherFiles/` — supporting artifacts staged by CI.
-- `EXE/` — setup installer source and generated `ElecKit-Setup.exe` output.
+### Model selection and coordination
+- Select host elements, same-type instances, and elements matching compound Smart Filter rules.
+- Assign selected elements to a workset in a workshared model.
+- Create a 3D view around a selection.
+- Review potential MEP/architectural/structural clashes with solid-intersection checks where geometry is available.
+- Screen possible near-misses using bounding-box estimates; this is not exact solid-to-solid clearance analysis.
 
-## Install and run
-1. Download or clone this repository.
-2. Build the project using the instructions below.
-3. Confirm the add-in assembly and `.addin` manifest are copied to `%APPDATA%\Autodesk\Revit\Addins\2020`.
-4. Close and restart Revit 2020.
-5. Find the **ElecKit** ribbon tab and launch a tool.
+### Schedules and quantities
+- Export active or multiple schedules to CSV.
+- Export selected element parameters to keyed CSV and import supported values back into a model.
+- Generate circuit reports and select elements by circuit.
+- Export grouped quantity counts and supported MEP curve lengths.
+- Preserve typed schedule values where supported, including ElementId-related data; validate imported changes on a copy of the model.
 
-A Debug build is configured to copy the add-in to the per-user Addins directory for the selected `RevitVersion`. Close Revit before rebuilding or replacing loaded files. If the copy step reports an error, verify the destination path and permissions rather than assuming deployment succeeded.
+Tool availability and results depend on the active view, selection, model content, category, parameters, and Revit API limitations. See [ROADMAP.md](ROADMAP.md) for current implementation notes and remaining gaps.
 
-## Build from source
-### Visual Studio
-1. Open the repository/project in Visual Studio 2022.
-2. Restore NuGet packages.
-3. Select **Debug** or **Release** and build the project.
+## Supported Revit versions
 
-### .NET CLI
-From the repository root, run:
-```powershell
-dotnet build -c Debug
+| Revit version | Target framework | Package |
+|---|---|---|
+| 2020 | .NET Framework 4.7 | Dedicated DLL and `.addin` |
+| 2021–2024 | .NET Framework 4.8 | Dedicated DLL and `.addin` |
+| 2025–2026 | .NET 8 for Windows | Dedicated DLL and `.addin` |
+| 2027 | .NET 10 for Windows | Dedicated DLL and `.addin` |
+
+Each Revit version must use its own build against the matching Revit API. **Do not copy one version's DLL into another version's Addins folder.** Revit must be installed locally to run and functionally test the add-in.
+
+## Download and install
+
+### Option A — setup EXE
+
+1. Open the [multi-version GitHub Actions workflow](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build-all-versions.yml).
+2. Open the latest run for the development branch.
+3. Confirm that every Revit build job, the test job, and the installer job completed successfully.
+4. In **Artifacts**, download `ElecKit-Setup-EXE` if it is present.
+5. Run the setup and select only the Revit versions installed on your computer.
+6. Restart Revit and look for the **ElecKit** ribbon tab.
+
+The installer is a CI artifact, not a guaranteed permanent download. If `ElecKit-Setup-EXE` is absent, the installer job did not publish it successfully; use the version-specific artifacts below instead.
+
+### Option B — version-specific package
+
+1. Open a successful workflow run.
+2. Download the artifact matching your installed version, for example `ElecKit-Revit-2020` or `ElecKit-Revit-2025`.
+3. Extract the package and follow its included manifest/package layout.
+4. Ensure the `.addin` manifest points to the correct DLL location for that version.
+5. Restart Revit.
+
+The per-user Revit Addins location is typically:
+
+```text
+%APPDATA%\Autodesk\Revit\Addins\<RevitVersion>
 ```
 
-If the command cannot locate a project, open the project file under `src/` and run the command from its directory, or pass the project path explicitly.
+Only install packages from a workflow run whose corresponding build job succeeded. Close Revit before replacing loaded DLLs. If the add-in does not appear, check the manifest path, Windows file permissions, and Revit's add-in load messages.
 
-### Continuous integration
-The workflow is defined in [`.github/workflows/build.yml`](.github/workflows/build.yml). It compiles the project using Revit API packages and helps catch compile-time regressions. A successful CI build is **not** proof that every command behaves correctly in a live Revit model.
+## Repository layout
 
-[View workflow runs](https://github.com/amdghedy/BimTools.ElecKit/actions).
+```text
+BimTools.ElecKit/
+├── .github/workflows/       # Multi-version CI build, tests and packaging
+├── src/                     # Commands, shared core and services
+├── tests/                   # Revit-independent regression tests
+├── docs/                    # Validation and technical documentation
+├── RevitVersions/            # Version-specific package/output location
+├── OtherFiles/               # Supporting CI files and intermediate artifacts
+├── EXE/                      # Setup installer source and output location
+├── ElecKit.csproj
+├── ROADMAP.md
+└── README.md
+```
 
-## Ribbon tools
-| Group | Examples |
+Build outputs and the setup EXE are expected to be generated by CI; their presence in the repository is not guaranteed. Download published artifacts from the relevant workflow run.
+
+## Build from source
+
+### Requirements
+- Windows
+- Visual Studio 2022 or a compatible .NET SDK installation
+- Access to restore the required NuGet packages
+- Revit installed for live functional testing
+
+### Build one version
+
+From the repository root:
+
+```powershell
+dotnet restore ElecKit.csproj -p:RevitVersion=2020
+dotnet build ElecKit.csproj -c Release --no-restore -p:RevitVersion=2020
+```
+
+Replace `2020` with the Revit version you intend to target. The framework and Revit API references are selected using the `RevitVersion` build property. If you build locally, confirm the project uses the correct SDK and version-matched API packages for your target.
+
+### Build and test in GitHub Actions
+
+The workflow is defined in [`.github/workflows/build-all-versions.yml`](.github/workflows/build-all-versions.yml). It creates a matrix for Revit 2020–2027, runs the Revit-independent tests, stages version-specific packages, and attempts to build the selectable-version setup EXE.
+
+[**Open workflow runs →**](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build-all-versions.yml)
+
+CI verifies compilation and automated tests only. It does not launch Revit or prove that every command behaves correctly in a real project.
+
+## Ribbon tools at a glance
+
+| Area | Representative tools |
 |---|---|
-| Drafting | CAD to Detail Lines, Wires to Detail Lines, Detail Lines to Wires, Connect Runs, Lines to Conduit, Fillet tools, Split Lines, Clean Lines |
-| Wiring | Home Run Lines, Boundary to Conduits, Circuit Number Text, Wire Info to Comments, Cable Catalog |
-| Model | Select Hosts, Select Same Type, Smart Filter, Assign Workset, 3D from Selection, Clash Review |
-| Schedules | Export All Schedules, Export Active Schedule, Export Element Parameters, Import CSV Values, Quantity Takeoff |
-| Circuits | Circuit Report, Select by Circuit |
+| Drafting | CAD to Detail Lines, Wires to Detail Lines, Detail Lines to Wires, Connect Runs, Fillet, Split Lines, Clean Lines |
+| Wiring & routing | Home Run Lines, Boundary to Conduits, Route Cable Tray, Lines to Cable Tray, Circuit Number Text, Wire Info to Comments |
+| Selection & model | Select Hosts, Select Same Type, Smart Filter, Assign Workset, 3D from Selection |
+| Coordination | Clash Review, Deployment Audit |
+| Schedules & quantities | Export Schedules, Export Element Parameters, Import CSV Values, Quantity Takeoff |
+| Circuits | Circuit Report, Select by Circuit, Circuit & Panel Audit |
 
-The [roadmap](ROADMAP.md) records additional requested functions and their status. Planned entries are not currently available just because they appear in that document.
+Names and grouping may evolve as the ribbon and command registry are refined. The roadmap distinguishes implemented work from planned work.
 
-## Configuration and logs
-- **Log:** `%LOCALAPPDATA%\ElecKit\log.txt`
-- **Settings:** `%APPDATA%\ElecKit\settings.json`
+## Logs and troubleshooting
 
-If a command fails, note the tool name, Revit version, active view, selected element types, and relevant log entries. Remove sensitive project information before sharing logs in an issue.
+- **Log file:** `%LOCALAPPDATA%\ElecKit\log.txt`
+- **Settings file:** `%APPDATA%\ElecKit\settings.json`
 
-## Add a command
-1. Add a command class under `src/Commands/`, deriving from `ElecCommand`.
-2. Apply the appropriate Revit transaction attribute and implement the execution logic.
-3. Register the command in `src/Core/ToolRegistry.cs`.
-4. Build the project and verify that the command appears on the ribbon.
-5. Test success, cancellation, invalid selection, and failure/rollback behavior in Revit 2020.
+When reporting a problem, include:
+- Revit version and ElecKit package version/commit.
+- Tool name and a short sequence of reproduction steps.
+- Active view and relevant selected element categories.
+- Expected result and actual result.
+- Relevant sanitized log/error text.
 
-Follow neighboring commands and shared helpers. Keep geometry operations transaction-safe, validate selections before modifying the model, and provide clear messages when an operation cannot be completed.
+Do not attach confidential project models or unredacted project data to public issues.
 
-## Known limitations
-- The project targets **Revit 2020**; compatibility with other Revit versions is not guaranteed.
-- CI currently validates compilation, not the full runtime behavior of every command.
-- There is no automated live-Revit integration test suite at present.
-- Test geometry-changing tools on a copy of a project before production use, especially tools that clean, split, convert, or delete elements.
-- Server-based update and licensing features are not included.
+## Known limitations and release checks
 
-## Contributing and support
-Submit bug reports and feature requests through [GitHub Issues](https://github.com/amdghedy/BimTools.ElecKit/issues). Please include:
-- Revit version and a short description of the workflow.
-- Minimal steps to reproduce the issue.
-- Expected result versus actual result.
-- Relevant error text or sanitized log excerpts.
+- Some route-obstacle checks use active-view axis-aligned bounding boxes; they are approximate and are not exact solid-clearance analysis.
+- Circuit/panel checks depend on the parameters available in the model and should not be interpreted as a complete electrical engineering design validation.
+- Schedule import/export supports defined parameter types and workflows; test round-tripping on a copy before applying changes to a production model.
+- A Revit-independent test suite cannot validate all model-specific API behavior, geometry creation, transaction handling, or ribbon loading.
+- No automated live-Revit integration test currently replaces manual verification in Revit.
+- Before release, run the [Revit 2020 integration checklist](docs/REVIT2020_VALIDATION_CHECKLIST.md) and validate other target versions in their respective installed Revit environments.
 
-For feature proposals, describe the repetitive task being improved and the expected result in Revit. Do not upload confidential models or sensitive project data.
+## Contributing
+
+Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/amdghedy/BimTools.ElecKit/issues). For a proposed tool, describe the repetitive workflow, required inputs, expected model result, and how failures or cancellations should be handled.
+
+For code changes:
+1. Follow the existing command patterns under `src/Commands/`.
+2. Register commands through `src/Core/ToolRegistry.cs` where appropriate.
+3. Keep model modifications transaction-safe and report failures clearly.
+4. Add or update Revit-independent tests for logic that can be isolated from Revit.
+5. Verify behavior in a disposable model before using geometry-changing commands in production.
 
 ---
 
 Maintained by [amdghedy](https://github.com/amdghedy).
-
-## Automated validation
-
-GitHub Actions builds the Revit 2020 / .NET Framework 4.7 add-in and runs the Revit-independent CSV parser regression tests in `tests/ElecKit.Tests`. These tests cover quoted delimiters, escaped quotes, empty cells, malformed quoting, length conversions, bounding-box clearance and grouped quantity aggregation. Category-by-category takeoff verification and all live-Revit command checks remain manual release gates. A successful CI run does **not** establish that commands have been exercised inside Revit; the live Revit 2020 smoke test remains a release gate. See [the feature gap and delivery roadmap](ROADMAP.md).
-
-
-## Clash review scope
-
-Clash Review screens host-model elements against other host elements and loaded Revit links for supported MEP, structural, wall and floor categories. Linked bounding boxes and solids are transformed into host coordinates. Reports distinguish confirmed positive-volume solid intersections from unavailable/incomplete geometry checks. The command can optionally screen near-misses using a user-entered millimetre threshold; this is an axis-aligned bounding-box distance estimate, not exact solid-to-solid clearance. Exact clearance and live Revit verification remain open. CI build and Revit-independent tests passed for commit [`7a1278d`](https://github.com/amdghedy/BimTools.ElecKit/commit/7a1278db4cdd4062b9f37cf12d60a7d5bac4bb4f); this does not replace testing in a disposable Revit 2020 model. See [ROADMAP.md](ROADMAP.md).
-
-
-### Additional native gap-closure tools
-
-- **Circuit & Panel Audit** — exports conservative voltage, pole-count and explicitly declared VA-capacity checks; missing parameters are flagged for review.
-- **Route Cable Tray** — creates direct/L-shaped and multi-segment routes, plus an optional orthogonal obstacle-aware route using active-view bounding boxes and a user clearance threshold. Failed route pairs roll back.
-- **Lines to Cable Tray** — converts straight detail/model lines with per-segment rollback and failure reporting.
-- **Boundary to Cable Trays** — creates connected tray runs, including closed boundaries, and rolls back the entire run if a required elbow fails.
-- **Deployment Audit** — checks the Revit 2020 manifest, deployed DLL and loaded assembly hashes.
-- Transaction and command outcomes are logged locally. Live Revit 2020 validation remains a release gate.
-
-
-## Revit 2020 release validation
-
-Before release, run the [Revit 2020 integration validation checklist](docs/REVIT2020_VALIDATION_CHECKLIST.md) in a disposable model and attach the reports/screenshots to the pull request. CI alone does not verify Revit runtime behavior.
