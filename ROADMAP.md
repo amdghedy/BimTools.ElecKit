@@ -88,7 +88,7 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - [x] Transaction and command start/end/failure/rollback/commit outcomes are written to the local ElecKit log.
 - [x] Deployment Audit compares the Revit 2020 manifest, deployed DLL, loaded assembly path and SHA-256 hashes. Debug deployment copies the exact assembly and verifies outputs.
 - [x] Revit-independent circuit validation regression tests added to CI.
-- [ ] Revit 2020 integration checks remain mandatory for API behavior, connector geometry, fitting routing preferences, project-specific panel parameter mapping and deployment state.
+- [ ] Revit 2020 integration checks remain mandatory for API behavior, connector geometry, fitting routing preferences, project-specific panel parameter mapping and deployment state. Use docs/REVIT2020_VALIDATION_CHECKLIST.md and attach evidence before marking the PR ready.
 
 - [x] Expanded tray workflows with straight-line conversion and connected/closed boundary routing; required elbow failures roll back each affected tray run.
 - [x] Tightened conduit routing consistency: Connect Runs no longer counts rolled-back L-shaped conduits as created, and required elbow failures roll back the pair; Boundary to Conduits rolls back the run on required elbow failure.

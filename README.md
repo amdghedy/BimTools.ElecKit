@@ -132,3 +132,8 @@ Clash Review screens host-model elements against other host elements and loaded 
 - **Boundary to Cable Trays** — creates connected tray runs, including closed boundaries, and rolls back the entire run if a required elbow fails.
 - **Deployment Audit** — checks the Revit 2020 manifest, deployed DLL and loaded assembly hashes.
 - Transaction and command outcomes are logged locally. Live Revit 2020 validation remains a release gate.
+
+
+## Revit 2020 release validation
+
+Before release, run the [Revit 2020 integration validation checklist](docs/REVIT2020_VALIDATION_CHECKLIST.md) in a disposable model and attach the reports/screenshots to the pull request. CI alone does not verify Revit runtime behavior.
