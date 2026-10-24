@@ -87,13 +87,13 @@ namespace ElecKit.Core
             T("ExportAllSchedules", "Export All\nSchedules", "Schedules",
               "Exports every schedule in the model to its own CSV file in a new folder.",
               typeof(ExportAllSchedulesCommand)),
-            T("ExportActiveSchedule", "Export Active\\nSchedule", "Schedules",
+            T("ExportActiveSchedule", "Export Active\nSchedule", "Schedules",
               "Exports the open schedule view to a single CSV file in Revit's native schedule format.",
               typeof(ExportActiveScheduleCommand)),
-            T("ExportScheduleRoundTrip", "Export Schedule\\nRound-Trip", "Schedules",
+            T("ExportScheduleRoundTrip", "Export Schedule\nRound-Trip", "Schedules",
               "Exports itemized schedule rows with ElementId keys and parameter-id-qualified values for a controlled edit/import cycle. Filtered and grouped schedules are not supported in this mode.",
               typeof(ExportScheduleRoundTripCommand)),
-            T("ImportScheduleRoundTrip", "Import Schedule\\nRound-Trip", "Schedules",
+            T("ImportScheduleRoundTrip", "Import Schedule\nRound-Trip", "Schedules",
               "Imports an Export Schedule Round-Trip CSV by ElementId and parameter identity, with typed values and a per-row result summary.",
               typeof(ImportScheduleRoundTripCommand)),
 
@@ -117,7 +117,7 @@ namespace ElecKit.Core
               "Imports writable parameter values from CSV using ElementId or unique Mark keys; previews the operation and reports skipped or rejected values.",
               typeof(ImportScheduleValuesCommand)),
             T("ExportElementParameters", "Export Element\nParameters", "Schedules",
-              "Exports selected model instances to a keyed CSV with ElementId, Mark and common writable instance parameters for review and later import.",
+              "Exports selected instances and types to a keyed CSV with ElementId, Mark and common writable parameter values for review and later import.",
               typeof(ExportElementParametersCommand)),
 
             // Circuits
