@@ -96,3 +96,6 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - [x] Circuit assignment checks projected destination-panel load (existing assigned circuits plus proposed circuit) against explicit declared capacity; unknown existing loads are flagged for review.
 - [x] Boundary-to-conduit routing rolls back a run if any required elbow fitting fails rather than committing a discontinuous run.
 - [x] Route Cable Tray supports an ordered multi-segment path with elbow fittings at turns; a failed fitting rolls back the complete path.
+
+- [x] Added a dedicated Cable Tray Fitting command for elbow, transition/reducer and tee fittings, with connector proximity preflight and rollback on Revit rejection.
+- [ ] Cable-tray crosses, automated branches, vertical risers, obstacle avoidance and geometry-aware size transitions remain advanced routing work; fitting creation is still subject to live-model routing preferences.
