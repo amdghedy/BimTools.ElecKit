@@ -6,14 +6,14 @@ ElecKit is the focused, public electrical productivity add-in targeting Revit 20
 
 ## Current ElecKit baseline
 
-The main branch contains 26 command classes:
+The main branch contains 27 command classes:
 
 | Area | Implemented commands |
 |---|---|
 | Drafting | CAD to Detail Lines; Wires to Detail Lines; Detail Lines to Wires; Connect Runs; Lines to Conduit; Fillet Radius; Fillet Two Lines; Fillet Corners; Split Lines; Clean Lines |
 | Wiring | Home Run Lines; Boundary to Conduits; Circuit Number Text; Wire Info to Comments; Cable Catalog |
-| Model and selection | Select Hosts; Select Same Type; 3D from Selection |
-| Schedules | Export All Schedules; Export Active Schedule |
+| Model and selection | Select Hosts; Select Same Type; Smart Filter; Clash Review; 3D from Selection |
+| Schedules and data exchange | Export All Schedules; Export Active Schedule; Export Element Parameters; Import CSV Values; Quantity Takeoff |
 | Circuits | Circuit Report; Select by Circuit |
 
 **Status definition:** “Implemented” means a command is present in the current source tree. It does not, by itself, prove a clean build, safe behavior in every model, or successful testing inside Revit. Revit integration testing remains a release gate.
@@ -27,7 +27,7 @@ The following capabilities exist as named commands or command groups in ElecTool
 | P0 | Clean Lines safety | `OverkillCommand.cs` | Remove only exact duplicates or shorter collinear segments fully contained by a retained segment. Preserve partial overlaps and disjoint collinear segments. |
 | P1 | Clash detection | `ClashDetectionCommand.cs`, `NewToolsCoordination.cs` | **Partially implemented.** Exports active-view MEP bounding-box overlap candidates with IDs to CSV and explicitly labels them as candidates, not confirmed solid clashes. Selection/category filters, transformed linked-model geometry, and exact solid intersection remain open. |
 | P1 | Quantity takeoff | `QuantityTakeoffCommand.cs`, `NewToolsQA.cs` | Category/filter selection, correct internal-unit conversion, grouped totals, and CSV output with clear units. |
-| P1 | Schedule round-trip | `ScheduleDynamicExportCommand.cs`, `ScheduleDynamicImportCommand.cs`, `ImportExcelAsScheduleCommand.cs` | **Partially implemented.** `ImportScheduleValuesCommand.cs` imports CSV by ElementId or unique Mark, previews before changes, skips blank cells, uses unit-aware parsing for doubles, and reports failures. A true keyed export/import round-trip still needs a matching export format that supplies stable ElementIds. |
+| P1 | Schedule and parameter data exchange | `ScheduleDynamicExportCommand.cs`, `ScheduleDynamicImportCommand.cs`, `ImportExcelAsScheduleCommand.cs` | **Partially implemented.** `ExportElementParametersCommand.cs` exports selected instances with ElementId, Mark and common writable instance parameters; `ImportScheduleValuesCommand.cs` imports the keyed CSV, previews before changes, skips blank cells and reports failures. This is an element-parameter round-trip, not a native schedule-row round-trip; type parameters, ElementId-valued parameters, and grouped schedule rows are not covered. Duplicate headers and duplicate row keys are rejected. |
 | P1 | Circuit and panel tools | `NewToolsCircuits.cs`, `AssignCircuitNumberCommand.cs`, `PanelSLDCommand.cs` | Validate circuit/panel relationships; report skipped items; never silently change circuit assignments. |
 | P1 | Conduit and cable-tray workflows | `NewToolsConduit.cs`, `NewToolsTray.cs`, `CableConduitCommand.cs`, `CableTrayCommand.cs`, `DrawCableTrayCommand.cs` | Validate routing inputs, sizes and fittings; report failed segments; preserve user control of type and level. |
 | P2 | Workset assignment | `AssignToTypeWorksetCommand.cs` | Preview affected elements, require a valid workshared document and target workset, and report per-element failures. |
@@ -59,9 +59,9 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 
 1. Fix and regression-test data-loss risks before adding more commands.
 2. Stabilize transaction handling, startup diagnostics and deployment feedback.
-3. Add a safe schedule export/import workflow with preview and key validation.
+3. Expand keyed element-parameter export/import; native schedule-row round-trip remains a separate task.
 4. Add quantity takeoff and CSV reporting.
-5. Add smart selection/filtering and workset assignment.
+5. Extend smart selection/filtering and add workset assignment.
 6. Add clash review and coordination reporting.
 7. Add panel/circuit and conduit/tray tools.
 8. Add annotation, view/sheet, parameter and family management tools.
