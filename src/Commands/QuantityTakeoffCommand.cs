@@ -96,7 +96,7 @@ namespace ElecKit.Commands
             {
                 string emptyMessage = "No supported elements were found in the active view for the selected scope.";
                 if (categoryErrors.Count > 0)
-                    emptyMessage += "\\n\\nCategories that could not be scanned:\\n" + string.Join("\\n", categoryErrors.Take(10));
+                    emptyMessage += "\n\nCategories that could not be scanned:\n" + string.Join("\n", categoryErrors.Take(10));
                 TaskDialog.Show("Quantity Takeoff", emptyMessage);
                 return categoryErrors.Count > 0 ? Result.Failed : Result.Succeeded;
             }
