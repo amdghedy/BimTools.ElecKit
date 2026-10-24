@@ -31,7 +31,7 @@ The following capabilities exist as named commands or command groups in ElecTool
 | P1 | Circuit and panel tools | `NewToolsCircuits.cs`, `AssignCircuitNumberCommand.cs`, `PanelSLDCommand.cs` | **Partially implemented.** Circuit report, select-by-circuit, and a guarded manual circuit-to-panel assignment command are present. The assignment command requires the user to pick the circuit member and destination electrical equipment, and asks Revit to perform the reassignment in a transaction. Electrical compatibility, spare capacity, panel schedules, and live Revit 2020 behavior must be verified in a test model; automatic assignment and single-line-diagram generation remain open. |
 | P1 | Conduit and cable-tray workflows | `NewToolsConduit.cs`, `NewToolsTray.cs`, `CableConduitCommand.cs`, `CableTrayCommand.cs`, `DrawCableTrayCommand.cs` | Validate routing inputs, sizes and fittings; report failed segments; preserve user control of type and level. |
 | P2 | Workset assignment | `AssignToTypeWorksetCommand.cs` | **Partially implemented.** `AssignWorksetCommand.cs` requires a workshared document, lets the user select instances and a target user workset, and reports changed/unchanged/failed counts. A preview table and live-Revit ownership/permission testing remain open. |
-| P2 | Smart filtering | `SmartFilterCommand.cs` | **Partially implemented.** Pick an element and select same-type, same-category, or same-parameter-value instances in the active view. Parameter-name/value matching is exact text (numeric values use Revit’s displayed string); isolate controls and broader filter composition remain open. |
+| P2 | Smart filtering | `SmartFilterCommand.cs` | **Partially implemented.** Pick an element and select same-type, same-category, or same-parameter-value instances in the active view. A follow-up action now supports selection-only or temporary isolation; use Revit's Reset Temporary Hide/Isolate control to restore the view. Parameter-name/value matching is exact text (numeric values use Revit’s displayed string); compound multi-rule filtering remains open. |
 | P2 | Parameter management | `SharedParamsCommand.cs` | Validate shared-parameter definitions and bindings; preserve existing bindings; explain conflicts before applying changes. |
 | P2 | Family type manager | `FamilyTypeManagerCommand.cs` | Show available types, validate type compatibility, and report elements that could not be changed. |
 | P2 | Junction-box placement and alignment | `AddJunctionBoxCommand.cs`, `AlignToFamilyCommand.cs`, `ConnectToElementCommand.cs` | Validate host/connector compatibility, use explicit pick prompts, and roll back cleanly on failure. |
@@ -63,7 +63,7 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 2. Stabilize transaction handling, startup diagnostics and deployment feedback.
 3. Expand keyed element-parameter export/import; native schedule-row round-trip remains a separate task.
 4. Add quantity takeoff and CSV reporting.
-5. Extend smart selection/filtering; validate workset assignment in live Revit and add preview/ownership safeguards.
+5. Extend smart selection/filtering with compound rules; validate workset assignment in live Revit and add preview/ownership safeguards.
 6. Add clash review and coordination reporting.
 7. Expand panel/circuit workflows (capacity/compatibility validation, panel schedules and single-line diagrams), then add conduit/tray tools.
 8. Add annotation, view/sheet, parameter and family management tools.
