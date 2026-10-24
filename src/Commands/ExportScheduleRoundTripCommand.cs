@@ -238,6 +238,21 @@ namespace ElecKit.Commands
                     ? doc.GetElement(element.GetTypeId())
                     : element;
                 Parameter parameter = owner == null ? null : ResolveParameter(doc, owner, schedulable.ParameterId);
+                if (filter.FilterType == ScheduleFilterType.HasParameter)
+                {
+                    if (parameter == null) return false;
+                    continue;
+                }
+                if (filter.FilterType == ScheduleFilterType.HasValue)
+                {
+                    if (parameter == null || !parameter.HasValue) return false;
+                    continue;
+                }
+                if (filter.FilterType == ScheduleFilterType.HasNoValue)
+                {
+                    if (parameter != null && parameter.HasValue) return false;
+                    continue;
+                }
                 if (parameter == null)
                     throw new InvalidOperationException("Cannot resolve filter parameter: " + field.GetName());
 
