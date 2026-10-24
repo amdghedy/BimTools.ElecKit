@@ -101,4 +101,4 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - [x] Added cable-tray cross fitting and a vertical riser creation command; fitting/vertical geometry still requires live-model validation.
 - [x] Added an optional 2D orthogonal obstacle-aware cable-tray route planner using active-view bounding boxes, explicit user clearance, a bounded obstacle count and per-pair rollback. This is broad-phase avoidance, not exact-solid clearance.
 - [x] Added a guided orthogonal cable-tray T-branch layout from three ordered anchors, with a tee and optional branch elbow created atomically.
-- [ ] Geometry-aware size-transition planning remains open; the transition fitting command delegates final compatibility to Revit routing preferences.
+- [x] Transition/reducer fitting preflight compares readable tray width/height values, rejects same-size transitions, and asks for confirmation when dimensions are unavailable; Revit still validates connector compatibility and routing preferences.

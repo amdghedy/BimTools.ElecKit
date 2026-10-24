@@ -62,6 +62,34 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
+            if (fittingKind == 1)
+            {
+                double? widthA = ReadDimensionFeet(trays[0], "Width", "Cable Tray Width");
+                double? heightA = ReadDimensionFeet(trays[0], "Height", "Cable Tray Height");
+                double? widthB = ReadDimensionFeet(trays[1], "Width", "Cable Tray Width");
+                double? heightB = ReadDimensionFeet(trays[1], "Height", "Cable Tray Height");
+                if (widthA.HasValue && heightA.HasValue && widthB.HasValue && heightB.HasValue)
+                {
+                    bool sameWidth = Math.Abs(widthA.Value - widthB.Value) <= UnitConv.MmToFeet(1.0);
+                    bool sameHeight = Math.Abs(heightA.Value - heightB.Value) <= UnitConv.MmToFeet(1.0);
+                    if (sameWidth && sameHeight)
+                    {
+                        TaskDialog.Show("Connect Cable Tray Fitting",
+                            "The selected trays have matching known width and height; a reducer/transition is not indicated by their dimensions. No changes were made.");
+                        return Result.Cancelled;
+                    }
+                }
+                else
+                {
+                    var confirm = new TaskDialog("Connect Cable Tray Fitting");
+                    confirm.MainInstruction = "Tray dimensions could not be read reliably.";
+                    confirm.MainContent = "Revit will validate the selected transition against connector geometry and routing preferences. Continue?";
+                    confirm.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;
+                    confirm.DefaultButton = TaskDialogResult.No;
+                    if (confirm.Show() != TaskDialogResult.Yes) return Result.Cancelled;
+                }
+            }
+
             string failure = null;
             ctx.Transact("Connect cable tray fitting", () =>
             {
@@ -103,6 +131,21 @@ namespace ElecKit.Commands
             return Result.Succeeded;
         }
 
+
+        private static double? ReadDimensionFeet(CableTray tray, params string[] names)
+        {
+            foreach (Element owner in new Element[] { tray, tray == null ? null : tray.Document.GetElement(tray.GetTypeId()) })
+            {
+                if (owner == null) continue;
+                foreach (string name in names)
+                {
+                    Parameter p = owner.LookupParameter(name);
+                    if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                        !double.IsInfinity(p.AsDouble()) && p.AsDouble() > 0) return p.AsDouble();
+                }
+            }
+            return null;
+        }
         private static Connector[] FindNearestConnectorCombination(IList<CableTray> trays, out double maxSpread)
         {
             maxSpread = double.MaxValue;
