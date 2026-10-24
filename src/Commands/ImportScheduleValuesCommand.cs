@@ -25,9 +25,38 @@ namespace ElecKit.Commands
             if (rows.Count < 2) { TaskDialog.Show("Import Values", "CSV must contain a header and at least one data row."); return Result.Cancelled; }
 
             string[] header = rows[0].Select(s => s.Trim().TrimStart('\uFEFF')).ToArray();
+            var duplicateHeaders = header
+                .Where(h => !string.IsNullOrWhiteSpace(h))
+                .GroupBy(h => h, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+            if (duplicateHeaders.Count > 0)
+            {
+                TaskDialog.Show("Import Values", "Duplicate CSV headers are not allowed because they make parameter mapping ambiguous:\\n" +
+                    string.Join(", ", duplicateHeaders));
+                return Result.Cancelled;
+            }
+
             int idCol = HeaderIndex(header, "ElementId", "Element ID", "Id");
             int markCol = HeaderIndex(header, "Mark");
             if (idCol < 0 && markCol < 0) { TaskDialog.Show("Import Values", "Include an ElementId or Mark column."); return Result.Cancelled; }
+            // Reject duplicate row keys before opening a transaction so one element cannot be updated twice accidentally.
+            int keyCol = idCol >= 0 ? idCol : markCol;
+            var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int r = 1; r < rows.Count; r++)
+            {
+                if (keyCol >= rows[r].Length || string.IsNullOrWhiteSpace(rows[r][keyCol])) continue;
+                string key = rows[r][keyCol].Trim();
+                if (!seenKeys.Add(key))
+                {
+                    TaskDialog.Show("Import Values", "Duplicate " + (idCol >= 0 ? "ElementId" : "Mark") +
+                        " key found on CSV row " + (r + 1) + ": " + key +
+                        ". No values were imported. Remove duplicate rows and try again.");
+                    return Result.Cancelled;
+                }
+            }
+
             var valueCols = Enumerable.Range(0, header.Length).Where(i => i != idCol && i != markCol && !string.IsNullOrWhiteSpace(header[i])).ToList();
             if (valueCols.Count == 0) { TaskDialog.Show("Import Values", "No parameter columns found."); return Result.Cancelled; }
 
