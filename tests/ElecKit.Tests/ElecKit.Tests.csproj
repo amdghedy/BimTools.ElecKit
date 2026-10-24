@@ -16,5 +16,6 @@
   <ItemGroup>
     <Compile Include="../../src/Core/CsvLineParser.cs" Link="Production/CsvLineParser.cs" />
     <Compile Include="../../src/Core/Csv.cs" Link="Production/Csv.cs" />
+    <Compile Include="../../src/Core/LengthUnits.cs" Link="Production/LengthUnits.cs" />
   </ItemGroup>
 </Project>
