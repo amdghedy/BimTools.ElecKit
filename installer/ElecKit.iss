@@ -34,6 +34,8 @@ Name: "revit2024"; Description: "Install for Revit 2024"; GroupDescription: "Sel
 Name: "revit2025"; Description: "Install for Revit 2025"; GroupDescription: "Select Revit versions to install:"; Flags: unchecked
 Name: "revit2026"; Description: "Install for Revit 2026"; GroupDescription: "Select Revit versions to install:"; Flags: unchecked
 
+Name: "revit2027"; Description: "Install for Revit 2027"; GroupDescription: "Select Revit versions to install:"; Flags: unchecked
+
 [Files]
 Source: "artifacts\Revit2020\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020\ElecKit"; Flags: ignoreversion; Tasks: revit2020
 Source: "artifacts\Revit2020\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020"; Flags: ignoreversion; Tasks: revit2020
@@ -49,6 +51,9 @@ Source: "artifacts\Revit2025\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revi
 Source: "artifacts\Revit2025\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2025"; Flags: ignoreversion; Tasks: revit2025
 Source: "artifacts\Revit2026\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2026\ElecKit"; Flags: ignoreversion; Tasks: revit2026
 Source: "artifacts\Revit2026\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2026"; Flags: ignoreversion; Tasks: revit2026
+
+Source: "..\\artifacts\\Revit2027\\ElecKit.dll"; DestDir: "{userappdata}\\Autodesk\\Revit\\Addins\\2027\\ElecKit"; Flags: ignoreversion; Tasks: revit2027
+Source: "..\\artifacts\\Revit2027\\ElecKit.addin"; DestDir: "{userappdata}\\Autodesk\\Revit\\Addins\\2027"; Flags: ignoreversion; Tasks: revit2027
 
 [Code]
 function InitializeSetup(): Boolean;
@@ -69,7 +74,8 @@ begin
        not WizardIsTaskSelected('revit2023') and
        not WizardIsTaskSelected('revit2024') and
        not WizardIsTaskSelected('revit2025') and
-       not WizardIsTaskSelected('revit2026') then
+       not WizardIsTaskSelected('revit2026') and
+       not WizardIsTaskSelected('revit2027') then
     begin
       MsgBox('Select at least one Revit version to install ElecKit.', mbError, MB_OK);
       Result := False;
