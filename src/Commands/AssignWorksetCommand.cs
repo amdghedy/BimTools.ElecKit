@@ -43,7 +43,7 @@ namespace ElecKit.Commands
 
             var worksets = new List<Workset>();
             foreach (Workset workset in ctx.Doc.GetWorksetTable().GetWorksets(WorksetKind.UserWorkset))
-                if (workset != null && !workset.IsOpen == false) worksets.Add(workset);
+                if (workset != null) worksets.Add(workset);
 
             if (worksets.Count == 0)
             {
