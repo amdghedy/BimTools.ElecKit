@@ -113,3 +113,7 @@ For feature proposals, describe the repetitive task being improved and the expec
 ---
 
 Maintained by [amdghedy](https://github.com/amdghedy).
+
+## Automated validation
+
+GitHub Actions builds the Revit 2020 / .NET Framework 4.7 add-in and runs the Revit-independent CSV parser regression tests in `tests/ElecKit.Tests`. These tests cover quoted delimiters, escaped quotes, empty cells and malformed quoting. A successful CI run does **not** establish that commands have been exercised inside Revit; the live Revit 2020 smoke test remains a release gate. See [the feature gap and delivery roadmap](ROADMAP.md).
