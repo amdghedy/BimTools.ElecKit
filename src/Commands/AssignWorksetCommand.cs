@@ -42,7 +42,7 @@ namespace ElecKit.Commands
             }
 
             var worksets = new List<Workset>();
-            foreach (Workset workset in ctx.Doc.GetWorksetTable().GetWorksets(WorksetKind.UserWorkset))
+            foreach (Workset workset in WorksetTable.GetWorksets(WorksetKind.UserWorkset))
                 if (workset != null) worksets.Add(workset);
 
             if (worksets.Count == 0)
@@ -96,7 +96,7 @@ namespace ElecKit.Commands
                 "\nAlready on target: " + unchanged + "\nFailed: " + failed;
             if (failures.Count > 0) report += "\n\nFirst failures:\n" + string.Join("\n", failures);
             TaskDialog.Show("Assign Workset", report);
-            return failed > 0 ? Result.Succeeded : Result.Succeeded;
+            return Result.Succeeded;
         }
     }
 }
