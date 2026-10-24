@@ -78,3 +78,27 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - Handles internal units and user-facing units correctly.
 - Has a short manual test checklist and evidence of the result in Revit.
 - Is reflected in the README and this roadmap with an honest status.
+
+
+## Native gap-closure implementation — feature branch 2026-10-24
+
+- [x] Circuit preflight blocks known voltage/pole-count mismatches and known load-over-capacity conflicts where explicitly named comparable VA/kVA data exists. Missing ratings are warnings, not verified-safe results.
+- [x] Circuit & Panel Audit exports per-circuit values and PASS/FAIL/REVIEW findings. This is a conservative parameter-based screen, not a substitute for protection, phase-balance, short-circuit or code calculations.
+- [x] Route Cable Tray creates direct or L-shaped tray routes between ordered picked anchors; a route pair rolls back if its required elbow cannot be created.
+- [x] Transaction and command start/end/failure/rollback/commit outcomes are written to the local ElecKit log.
+- [x] Deployment Audit compares the Revit 2020 manifest, deployed DLL, loaded assembly path and SHA-256 hashes. Debug deployment copies the exact assembly and verifies outputs.
+- [x] Revit-independent circuit validation regression tests added to CI.
+- [ ] Revit 2020 integration checks remain mandatory for API behavior, connector geometry, fitting routing preferences, project-specific panel parameter mapping and deployment state. Use docs/REVIT2020_VALIDATION_CHECKLIST.md and attach evidence before marking the PR ready.
+
+- [x] Expanded tray workflows with straight-line conversion and connected/closed boundary routing; required elbow failures roll back each affected tray run.
+- [x] Tightened conduit routing consistency: Connect Runs no longer counts rolled-back L-shaped conduits as created, and required elbow failures roll back the pair; Boundary to Conduits rolls back the run on required elbow failure.
+
+- [x] Circuit assignment checks projected destination-panel load (existing assigned circuits plus proposed circuit) against explicit declared capacity; unknown existing loads are flagged for review.
+- [x] Boundary-to-conduit routing rolls back a run if any required elbow fitting fails rather than committing a discontinuous run.
+- [x] Route Cable Tray supports an ordered multi-segment path with elbow fittings at turns; a failed fitting rolls back the complete path.
+
+- [x] Added a dedicated Cable Tray Fitting command for elbow, transition/reducer and tee fittings, with connector proximity preflight and rollback on Revit rejection.
+- [x] Added cable-tray cross fitting and a vertical riser creation command; fitting/vertical geometry still requires live-model validation.
+- [x] Added an optional 2D orthogonal obstacle-aware cable-tray route planner using active-view bounding boxes, explicit user clearance, a bounded obstacle count and per-pair rollback. This is broad-phase avoidance, not exact-solid clearance.
+- [x] Added a guided orthogonal cable-tray T-branch layout from three ordered anchors, with a tee and optional branch elbow created atomically.
+- [x] Transition/reducer fitting preflight compares readable tray width/height values, rejects same-size transitions, and asks for confirmation when dimensions are unavailable; Revit still validates connector compatibility and routing preferences.

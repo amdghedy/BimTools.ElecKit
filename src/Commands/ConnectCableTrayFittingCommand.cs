@@ -1,0 +1,216 @@
+using System;
+using System.Collections.Generic;
+using Autodesk.Revit.Attributes;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Electrical;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Selection;
+using ElecKit.Core;
+
+namespace ElecKit.Commands
+{
+    /// <summary>Places an elbow, transition or tee between selected cable-tray end connectors.</summary>
+    [Transaction(TransactionMode.Manual)]
+    public class ConnectCableTrayFittingCommand : ElecCommand
+    {
+        private sealed class TrayFilter : ISelectionFilter
+        {
+            public bool AllowElement(Element element) { return element is CableTray; }
+            public bool AllowReference(Reference reference, XYZ position) { return false; }
+        }
+
+        protected override Result Run(ToolContext ctx, ref string message)
+        {
+            int fittingKind = Dialogs.Choose("Connect Cable Tray Fitting", "Choose fitting type and then select trays in order:",
+                new System.Collections.Generic.List<string> {
+                    "Elbow (2 trays)", "Transition / reducer (2 trays)", "Tee (main run first, branch third)", "Cross (two main-run segments first, two branch-run segments last)"
+                }, 0);
+            if (fittingKind < 0 || fittingKind > 2) return Result.Cancelled;
+
+            int required = fittingKind == 2 ? 3 : fittingKind == 3 ? 4 : 2;
+            IList<Reference> picked;
+            try
+            {
+                picked = ctx.UiDoc.Selection.PickObjects(ObjectType.Element, new TrayFilter(),
+                    fittingKind == 2
+                        ? "Select exactly three cable trays: main run first, second main segment second, branch third"
+                        : fittingKind == 3
+                            ? "Select exactly four cable trays: two main-run segments first, then two branch-run segments"
+                            : "Select exactly two cable trays whose end connectors should meet");
+            }
+            catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
+
+            if (picked == null || picked.Count != required)
+            {
+                TaskDialog.Show("Connect Cable Tray Fitting", "This fitting requires exactly " + required + " cable tray segment(s). No changes were made.");
+                return Result.Cancelled;
+            }
+
+            var trays = new List<CableTray>();
+            foreach (Reference r in picked)
+            {
+                CableTray tray = ctx.Doc.GetElement(r) as CableTray;
+                if (tray == null) return Result.Cancelled;
+                trays.Add(tray);
+            }
+
+            Connector[] selectedConnectors = FindNearestConnectorCombination(trays, out double spread);
+            if (selectedConnectors == null || spread > UnitConv.MmToFeet(75.0))
+            {
+                TaskDialog.Show("Connect Cable Tray Fitting",
+                    "The selected trays do not have end connectors within 75 mm of a common fitting point. Reposition/extend the tray segments or check their geometry. No changes were made.");
+                return Result.Cancelled;
+            }
+
+            if (fittingKind == 1)
+            {
+                double? widthA = ReadDimensionFeet(trays[0], "Width", "Cable Tray Width");
+                double? heightA = ReadDimensionFeet(trays[0], "Height", "Cable Tray Height");
+                double? widthB = ReadDimensionFeet(trays[1], "Width", "Cable Tray Width");
+                double? heightB = ReadDimensionFeet(trays[1], "Height", "Cable Tray Height");
+                if (widthA.HasValue && heightA.HasValue && widthB.HasValue && heightB.HasValue)
+                {
+                    bool sameWidth = Math.Abs(widthA.Value - widthB.Value) <= UnitConv.MmToFeet(1.0);
+                    bool sameHeight = Math.Abs(heightA.Value - heightB.Value) <= UnitConv.MmToFeet(1.0);
+                    if (sameWidth && sameHeight)
+                    {
+                        TaskDialog.Show("Connect Cable Tray Fitting",
+                            "The selected trays have matching known width and height; a reducer/transition is not indicated by their dimensions. No changes were made.");
+                        return Result.Cancelled;
+                    }
+                }
+                else
+                {
+                    var confirm = new TaskDialog("Connect Cable Tray Fitting");
+                    confirm.MainInstruction = "Tray dimensions could not be read reliably.";
+                    confirm.MainContent = "Revit will validate the selected transition against connector geometry and routing preferences. Continue?";
+                    confirm.CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No;
+                    confirm.DefaultButton = TaskDialogResult.No;
+                    if (confirm.Show() != TaskDialogResult.Yes) return Result.Cancelled;
+                }
+            }
+
+            string failure = null;
+            ctx.Transact("Connect cable tray fitting", () =>
+            {
+                using (var sub = new SubTransaction(ctx.Doc))
+                {
+                    sub.Start();
+                    try
+                    {
+                        if (fittingKind == 0)
+                            ctx.Doc.Create.NewElbowFitting(selectedConnectors[0], selectedConnectors[1]);
+                        else if (fittingKind == 1)
+                            ctx.Doc.Create.NewTransitionFitting(selectedConnectors[0], selectedConnectors[1]);
+                        else if (fittingKind == 2)
+                            ctx.Doc.Create.NewTeeFitting(selectedConnectors[0], selectedConnectors[1], selectedConnectors[2]);
+                        else
+                            ctx.Doc.Create.NewCrossFitting(selectedConnectors[0], selectedConnectors[1], selectedConnectors[2], selectedConnectors[3]);
+                        sub.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        if (sub.GetStatus() == TransactionStatus.Started) sub.RollBack();
+                        failure = ex.Message;
+                        Log.Error(ex);
+                    }
+                }
+            });
+
+            if (failure != null)
+            {
+                TaskDialog.Show("Connect Cable Tray Fitting",
+                    "Revit rejected the fitting; the fitting transaction was rolled back.\n\n" + failure +
+                    "\n\nCheck connector orientation, tray sizes, routing preferences and whether the selected ends are already connected.");
+                return Result.Failed;
+            }
+
+            TaskDialog.Show("Connect Cable Tray Fitting",
+                (fittingKind == 0 ? "Elbow" : fittingKind == 1 ? "Transition/reducer" : fittingKind == 2 ? "Tee" : "Cross") +
+                " fitting created successfully. Verify connector continuity and clearances before issue.");
+            return Result.Succeeded;
+        }
+
+
+        private static double? ReadDimensionFeet(CableTray tray, params string[] names)
+        {
+            foreach (Element owner in new Element[] { tray, tray == null ? null : tray.Document.GetElement(tray.GetTypeId()) })
+            {
+                if (owner == null) continue;
+                foreach (string name in names)
+                {
+                    Parameter p = owner.LookupParameter(name);
+                    if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                        !double.IsInfinity(p.AsDouble()) && p.AsDouble() > 0) return p.AsDouble();
+                }
+            }
+            return null;
+        }
+        private static Connector[] FindNearestConnectorCombination(IList<CableTray> trays, out double maxSpread)
+        {
+            maxSpread = double.MaxValue;
+            var sets = new List<List<Connector>>();
+            foreach (CableTray tray in trays)
+            {
+                var connectors = new List<Connector>();
+                foreach (Connector connector in tray.ConnectorManager.Connectors)
+                    if (connector.ConnectorType == ConnectorType.End) connectors.Add(connector);
+                if (connectors.Count == 0) return null;
+                sets.Add(connectors);
+            }
+
+            Connector[] best = null;
+            if (sets.Count == 2)
+            {
+                foreach (Connector a in sets[0])
+                foreach (Connector b in sets[1])
+                {
+                    double distance = a.Origin.DistanceTo(b.Origin);
+                    if (distance < maxSpread) { maxSpread = distance; best = new[] { a, b }; }
+                }
+            }
+            else if (sets.Count == 3)
+            {
+                double bestScore = double.MaxValue;
+                foreach (Connector a in sets[0])
+                foreach (Connector b in sets[1])
+                foreach (Connector c in sets[2])
+                {
+                    double ab = a.Origin.DistanceTo(b.Origin);
+                    double ac = a.Origin.DistanceTo(c.Origin);
+                    double bc = b.Origin.DistanceTo(c.Origin);
+                    double spread = Math.Max(ab, Math.Max(ac, bc));
+                    double score = ab + ac + bc;
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        maxSpread = spread;
+                        best = new[] { a, b, c };
+                    }
+                }
+            }
+            else if (sets.Count == 4)
+            {
+                double bestScore = double.MaxValue;
+                foreach (Connector a in sets[0])
+                foreach (Connector b in sets[1])
+                foreach (Connector c in sets[2])
+                foreach (Connector d in sets[3])
+                {
+                    double ab = a.Origin.DistanceTo(b.Origin), ac = a.Origin.DistanceTo(c.Origin);
+                    double ad = a.Origin.DistanceTo(d.Origin), bc = b.Origin.DistanceTo(c.Origin);
+                    double bd = b.Origin.DistanceTo(d.Origin), cd = c.Origin.DistanceTo(d.Origin);
+                    double spread = Math.Max(Math.Max(ab, ac), Math.Max(Math.Max(ad, bc), Math.Max(bd, cd)));
+                    double score = ab + ac + ad + bc + bd + cd;
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        maxSpread = spread;
+                        best = new[] { a, b, c, d };
+                    }
+                }
+            }
+            return best;
+        }
+    }
+}

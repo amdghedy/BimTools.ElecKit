@@ -15,7 +15,7 @@ using Microsoft.Win32;
 namespace ElecKit.Commands
 {
     /// <summary>
-    /// Exports selected instance parameters in the same keyed CSV shape accepted by ImportScheduleValuesCommand.
+    /// Exports selected instance or type parameters in the same keyed CSV shape accepted by ImportScheduleValuesCommand.
     /// ElementId is the primary key; Mark is included for human review, not used as a fallback when ElementId exists.
     /// </summary>
     [Transaction(TransactionMode.ReadOnly)]
@@ -33,20 +33,20 @@ namespace ElecKit.Commands
             try
             {
                 picked = ctx.UiDoc.Selection.PickObjects(ObjectType.Element,
-                    "Select model instances to export. Press Finish in the selection bar when done.");
+                    "Select model instances and/or types to export. Press Finish in the selection bar when done.");
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
 
             var elements = new List<Element>();
-            var seen = new HashSet<int>();
+            var seen = new HashSet<long>();
             foreach (Reference reference in picked)
             {
                 Element e = ctx.Doc.GetElement(reference);
-                if (e != null && !(e is ElementType) && seen.Add(e.Id.IntegerValue)) elements.Add(e);
+                if (e != null && seen.Add(e.Id.IntegerValue)) elements.Add(e);
             }
             if (elements.Count == 0)
             {
-                TaskDialog.Show("Export Element Parameters", "No model instances were selected.");
+                TaskDialog.Show("Export Element Parameters", "No model elements or types were selected.");
                 return Result.Cancelled;
             }
 
@@ -125,7 +125,7 @@ namespace ElecKit.Commands
                             value = p.AsInteger().ToString(CultureInfo.InvariantCulture);
                         else if (p.StorageType == StorageType.Double)
                             value = p.AsValueString() ?? "";
-                        // ElementId-valued parameters are deliberately excluded from the import contract.
+                        else if (p.StorageType == StorageType.ElementId) value = p.AsElementId().IntegerValue.ToString(CultureInfo.InvariantCulture);
                     }
                     csv.Append(",").Append(Csv.Escape(value));
                 }
@@ -135,7 +135,7 @@ namespace ElecKit.Commands
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
             TaskDialog.Show("Export Element Parameters",
                 elements.Count + " elements and " + columns.Count +
-                " common writable parameter columns exported. The ElementId column is the primary import key. " +
+                " common writable instance/type parameter columns exported, including ElementId-valued references. The ElementId column is the primary import key. " +
                 "Review the CSV before importing; blank values are intentionally ignored by the importer.\n\n" + dlg.FileName);
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });

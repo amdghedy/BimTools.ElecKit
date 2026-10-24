@@ -28,10 +28,10 @@ namespace ElecKit.Commands
                 TaskDialog.Show("Select by Circuit", "The selected element is no longer available. Run the command again.");
                 return Result.Cancelled;
             }
-            int pickedId = selected.Id.IntegerValue;
+            long pickedId = selected.Id.IntegerValue;
 
             var ids = new List<ElementId>();
-            var seen = new HashSet<int>();
+            var seen = new HashSet<long>();
             bool onCircuit = false;
 
             foreach (Element item in new FilteredElementCollector(ctx.Doc).OfClass(typeof(ElectricalSystem)))

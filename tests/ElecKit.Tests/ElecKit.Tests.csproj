@@ -18,6 +18,9 @@
     <Compile Include="../../src/Core/Csv.cs" Link="Production/Csv.cs" />
     <Compile Include="../../src/Core/LengthUnits.cs" Link="Production/LengthUnits.cs" />
     <Compile Include="../../src/Core/BoxClearance.cs" Link="Production/BoxClearance.cs" />
+    <Compile Include="../../src/Core/OrthogonalRoutePlanner.cs" Link="Production/OrthogonalRoutePlanner.cs" />
     <Compile Include="../../src/Core/QuantityTakeoffGrouping.cs" Link="Production/QuantityTakeoffGrouping.cs" />
+    <Compile Include="../../src/Core/SmartFilterLogic.cs" Link="Production/SmartFilterLogic.cs" />
+    <Compile Include="../../src/Core/CircuitPanelValidation.cs" Link="Production/CircuitPanelValidation.cs" />
   </ItemGroup>
 </Project>

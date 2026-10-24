@@ -126,7 +126,7 @@ namespace ElecKit.Commands
                         else if (!string.IsNullOrWhiteSpace(rowMark) && issues.Count < 50)
                             issues.Add("Row " + (r + 1) + ": Mark is missing or not unique: " + rowMark);
                     }
-                    if (el == null || el is ElementType) { skipped++; continue; }
+                    if (el == null) { skipped++; continue; }
 
                     // If both keys were exported, require them to agree. ElementIds can change
                     // after model replacement/recreation; a stale ID must not update the wrong row.
@@ -147,7 +147,7 @@ namespace ElecKit.Commands
                     {
                         if (c >= cells.Length || string.IsNullOrEmpty(cells[c])) continue;
                         Parameter p = el.LookupParameter(header[c]);
-                        if (p == null || p.IsReadOnly || p.StorageType == StorageType.ElementId)
+                        if (p == null || p.IsReadOnly)
                         { failed++; continue; }
                         try
                         {
@@ -162,6 +162,17 @@ namespace ElecKit.Commands
                                     ok = p.Set(cells[c].Equals("Yes", StringComparison.OrdinalIgnoreCase) ? 1 : 0);
                             }
                             else if (p.StorageType == StorageType.Double) ok = p.SetValueString(cells[c]);
+                            else if (p.StorageType == StorageType.ElementId)
+                            {
+                                int rawId;
+                                string raw = cells[c].Trim();
+                                if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out rawId))
+                                {
+                                    ElementId referenced = new ElementId(rawId);
+                                    if (rawId < 0 || ctx.Doc.GetElement(referenced) != null)
+                                        ok = p.Set(referenced);
+                                }
+                            }
                             if (ok) { parameterCount++; changed = true; } else failed++;
                         }
                         catch (Exception ex) { failed++; Log.Error(ex); if (issues.Count < 50) issues.Add("Row " + (r + 1) + ", " + header[c] + ": " + ex.Message); }

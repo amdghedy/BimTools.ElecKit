@@ -26,6 +26,82 @@ namespace ElecKit.Commands
             public bool AllowReference(Reference reference, XYZ position) { return false; }
         }
 
+        private static double? ReadDouble(Element element, params string[] names)
+        {
+            foreach (string name in names)
+            {
+                Parameter p = element == null ? null : element.LookupParameter(name);
+                if (p != null && p.StorageType == StorageType.Double)
+                {
+                    double value = p.AsDouble();
+                    if (!double.IsNaN(value) && !double.IsInfinity(value) && value > 0) return value;
+                }
+            }
+            return null;
+        }
+
+        private static int? ReadInt(Element element, params string[] names)
+        {
+            foreach (string name in names)
+            {
+                Parameter p = element == null ? null : element.LookupParameter(name);
+                if (p != null && p.StorageType == StorageType.Integer && p.AsInteger() > 0) return p.AsInteger();
+                int value;
+                if (p != null && p.StorageType == StorageType.String && int.TryParse(p.AsString(), out value) && value > 0) return value;
+            }
+            return null;
+        }
+
+        private static double? ReadCapacityVa(Element panel)
+        {
+            string[] names = { "Panel Capacity (VA)", "Maximum Apparent Load (VA)", "Connected Load Capacity (VA)", "Panel Capacity (kVA)" };
+            foreach (string name in names)
+            {
+                Parameter p = panel.LookupParameter(name);
+                if (p == null) continue;
+                string raw = p.AsValueString() ?? p.AsString();
+                if (string.IsNullOrWhiteSpace(raw) && p.StorageType == StorageType.Double)
+                    raw = p.AsDouble().ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var match = System.Text.RegularExpressions.Regex.Match(raw ?? "", @"[-+]?[0-9]*[\.,]?[0-9]+");
+                double value;
+                if (match.Success && double.TryParse(match.Value.Replace(',', '.'), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out value) && value > 0)
+                    return name.IndexOf("kVA", StringComparison.OrdinalIgnoreCase) >= 0 ? value * 1000.0 : value;
+            }
+            return null;
+        }
+
+        private static double? ReadLoadVa(ElectricalSystem system)
+        {
+            if (system == null) return null;
+            Parameter p = system.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD);
+            if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                !double.IsInfinity(p.AsDouble()) && p.AsDouble() >= 0) return p.AsDouble();
+            foreach (string name in new[] { "Apparent Load (VA)", "Connected Load (VA)" })
+            {
+                p = system.LookupParameter(name);
+                if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                    !double.IsInfinity(p.AsDouble()) && p.AsDouble() >= 0) return p.AsDouble();
+            }
+            return null;
+        }
+        private static double? ExistingPanelLoadVa(Document doc, FamilyInstance panel)
+        {
+            double total = 0.0;
+            foreach (Element element in new FilteredElementCollector(doc).OfClass(typeof(ElectricalSystem)))
+            {
+                ElectricalSystem system = element as ElectricalSystem;
+                if (system == null) continue;
+                FamilyInstance assigned = null;
+                try { assigned = system.BaseEquipment; } catch { return null; }
+                if (assigned == null || assigned.Id != panel.Id) continue;
+                double? load = ReadLoadVa(system);
+                if (!load.HasValue) return null;
+                total += load.Value;
+                if (double.IsNaN(total) || double.IsInfinity(total)) return null;
+            }
+            return total;
+        }
         protected override Result Run(ToolContext ctx, ref string message)
         {
             Reference circuitReference;
@@ -100,17 +176,38 @@ namespace ElecKit.Commands
                 return Result.Succeeded;
             }
 
-            string oldPanel = string.IsNullOrEmpty(targetSystem.PanelName) ? "(unassigned)" : targetSystem.PanelName;
-            ctx.Transact("Assign circuit to panel", delegate
+            double? circuitVoltage = ReadDouble(targetSystem, "Voltage", "Nominal Voltage", "Circuit Voltage");
+            if (!circuitVoltage.HasValue)
             {
-                targetSystem.SelectPanel(panel);
-            });
+                Parameter voltage = targetSystem.get_Parameter(BuiltInParameter.RBS_ELEC_VOLTAGE);
+                if (voltage != null && voltage.StorageType == StorageType.Double && voltage.AsDouble() > 0)
+                    circuitVoltage = voltage.AsDouble();
+            }
+            double? panelVoltage = ReadDouble(panel, "Voltage", "Rated Voltage", "Nominal Voltage");
+            int? circuitPoles = ReadInt(targetSystem, "Number of Poles", "Poles", "Pole Count");
+            int? panelPoles = ReadInt(panel, "Number of Poles", "Poles", "Pole Count");
+            double? loadVa = ReadLoadVa(targetSystem);
+            double? existingPanelLoadVa = ExistingPanelLoadVa(ctx.Doc, panel);
+            CircuitPanelCheck preflight = CircuitPanelValidation.Evaluate(
+                circuitVoltage, panelVoltage, circuitPoles, panelPoles, loadVa, ReadCapacityVa(panel), existingPanelLoadVa);
+            if (!preflight.CanAssign)
+            {
+                TaskDialog.Show("Assign Circuit Panel", "Assignment blocked because the available model data shows a known conflict:\n\n" +
+                    string.Join("\n", preflight.Errors) +
+                    "\n\nCorrect the circuit/panel data or verify the destination manually before retrying.");
+                return Result.Cancelled;
+            }
 
-            TaskDialog.Show("Assign Circuit Panel",
-                "Circuit: " + (targetSystem.CircuitNumber ?? "(unnumbered)") +
-                "\nPrevious panel: " + oldPanel +
-                "\nDestination panel: " + panel.Name +
-                "\n\nRevit accepted the panel assignment. Verify circuit capacity, voltage/phase compatibility and panel schedule in the model.");
+            string oldPanel = string.IsNullOrEmpty(targetSystem.PanelName) ? "(unassigned)" : targetSystem.PanelName;
+            ctx.Transact("Assign circuit to panel", delegate { targetSystem.SelectPanel(panel); });
+
+            string resultText = "Circuit: " + (targetSystem.CircuitNumber ?? "(unnumbered)") +
+                "\nPrevious panel: " + oldPanel + "\nDestination panel: " + panel.Name +
+                "\n\nRevit accepted the panel assignment.";
+            if (preflight.Warnings.Count > 0)
+                resultText += "\n\nManual checks required:\n" + string.Join("\n", preflight.Warnings);
+            resultText += "\nConfirm Revit panel schedule, protective-device ratings, phase balance and electrical design before issue.";
+            TaskDialog.Show("Assign Circuit Panel", resultText);
             return Result.Succeeded;
         }
     }

@@ -29,7 +29,7 @@ namespace ElecKit.Commands
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
 
             var elements = new List<Element>();
-            var seen = new HashSet<int>();
+            var seen = new HashSet<long>();
             foreach (Reference reference in picked)
             {
                 Element e = ctx.Doc.GetElement(reference);
