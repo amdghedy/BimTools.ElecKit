@@ -61,6 +61,10 @@ namespace ElecKit.Commands
                     if (p == null || p.Definition == null || p.IsReadOnly ||
                         p.StorageType == StorageType.None || string.IsNullOrWhiteSpace(p.Definition.Name)) continue;
                     string name = p.Definition.Name.Trim();
+                    if (string.Equals(name, "ElementId", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "Element ID", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "Id", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(name, "Mark", StringComparison.OrdinalIgnoreCase)) continue;
                     if (perElement.ContainsKey(name)) { ambiguous.Add(name); continue; }
                     perElement[name] = p.StorageType;
                 }
