@@ -24,7 +24,7 @@ ElecKit brings frequently used electrical drafting, wiring, model-selection, and
 - **Line cleanup and editing:** connect runs, split lines, fillet corners or picked lines, and clean duplicate detail-line geometry.
 - **Wiring workflows:** create home-run lines, create conduits from boundary lines, place circuit-number text, and copy wire information into conduit comments.
 - **Model navigation:** select host elements, select instances of the same type, and create a 3D view around a selection.
-- **Schedule and circuit data:** export active or multiple schedules to CSV, create a circuit report, and select elements by circuit.
+- **Schedule and circuit data:** export active or multiple schedules to CSV, import parameter values from a keyed CSV (ElementId or unique Mark), create circuit reports, and select elements by circuit.\n- **Electrical quantity takeoff:** export grouped counts and MEP curve lengths from the active model view to CSV.
 - **Central command registry:** ribbon tools are registered centrally rather than wired individually.
 
 Feature names describe intended workflows; availability and behavior can vary by selection, view, model content, and Revit API constraints.
@@ -74,7 +74,7 @@ The workflow is defined in [`.github/workflows/build.yml`](.github/workflows/bui
 | Drafting | CAD to Detail Lines, Wires to Detail Lines, Detail Lines to Wires, Connect Runs, Lines to Conduit, Fillet tools, Split Lines, Clean Lines |
 | Wiring | Home Run Lines, Boundary to Conduits, Circuit Number Text, Wire Info to Comments, Cable Catalog |
 | Model | Select Hosts, Select Same Type, 3D from Selection |
-| Schedules | Export All Schedules, Export Active Schedule |
+| Schedules | Export All Schedules, Export Active Schedule, Import CSV Values, Quantity Takeoff |
 | Circuits | Circuit Report, Select by Circuit |
 
 The [roadmap](ROADMAP.md) records additional requested functions and their status. Planned entries are not currently available just because they appear in that document.
