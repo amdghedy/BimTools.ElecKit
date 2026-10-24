@@ -1,6 +1,6 @@
 # ElecKit
 
-**An electrical productivity add-in for Autodesk Revit 2020.**
+**An electrical productivity add-in for Autodesk Revit 2020–2027.**
 
 ElecKit brings frequently used electrical drafting, wiring, model-selection, and schedule export/import tasks into a single ribbon. It is designed to reduce repetitive work while keeping tools close to the Revit workflow.
 
@@ -38,7 +38,7 @@ Feature names describe intended workflows; availability and behavior can vary by
 | Recommended IDE | Visual Studio 2022 |
 | CI | GitHub Actions |
 
-Revit must be installed to run the add-in. CI uses Revit API NuGet packages to compile without requiring a full Revit installation on the runner.
+Revit must be installed to run the add-in. CI uses version-matched Revit API NuGet packages to compile without requiring a full Revit installation on the runner. Build outputs are version-specific; a DLL built for one Revit API version must not be reused for another.
 
 ## Install and run
 1. Download or clone this repository.
@@ -47,7 +47,7 @@ Revit must be installed to run the add-in. CI uses Revit API NuGet packages to c
 4. Close and restart Revit 2020.
 5. Find the **ElecKit** ribbon tab and launch a tool.
 
-A Debug build is configured to copy the add-in to the per-user Revit 2020 add-ins directory. Close Revit before rebuilding or replacing loaded files. If the copy step reports an error, verify the destination path and permissions rather than assuming deployment succeeded.
+A Debug build is configured to copy the add-in to the per-user Addins directory for the selected `RevitVersion`. Close Revit before rebuilding or replacing loaded files. If the copy step reports an error, verify the destination path and permissions rather than assuming deployment succeeded.
 
 ## Build from source
 ### Visual Studio
