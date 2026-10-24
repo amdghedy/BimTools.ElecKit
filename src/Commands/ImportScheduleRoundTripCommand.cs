@@ -135,6 +135,38 @@ namespace ElecKit.Commands
                 }
             }
 
+            // Type parameters are shared by every instance of the same type. Reject conflicting edits
+            // before opening a transaction; otherwise the last CSV row would silently win.
+            var typeValues = new Dictionary<string, string>(StringComparer.Ordinal);
+            for (int r = 1; r < rows.Count; r++)
+            {
+                string[] cells = rows[r];
+                if (cells.All(string.IsNullOrWhiteSpace)) continue;
+                int id;
+                if (!int.TryParse(cells[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out id)) continue;
+                Element instance = ctx.Doc.GetElement(new ElementId(id));
+                if (instance == null) continue;
+                Element type = ctx.Doc.GetElement(instance.GetTypeId());
+                if (type == null) continue;
+                foreach (Column column in columns.Where(col => col.IsTypeParameter))
+                {
+                    string raw = cells[column.CsvIndex];
+                    if (string.IsNullOrEmpty(raw)) continue;
+                    string key = type.Id.IntegerValue.ToString(CultureInfo.InvariantCulture) + ":" +
+                        column.ParameterId.ToString(CultureInfo.InvariantCulture);
+                    string existing;
+                    if (typeValues.TryGetValue(key, out existing) &&
+                        !string.Equals(existing, raw, StringComparison.Ordinal))
+                    {
+                        TaskDialog.Show("Import Schedule Round-Trip",
+                            "Conflicting values for type parameter '" + column.Name + "' on type ElementId " +
+                            type.Id.IntegerValue + ". Instances sharing one type must have the same value. No values were imported.");
+                        return Result.Cancelled;
+                    }
+                    typeValues[key] = raw;
+                }
+            }
+
             var confirm = new TaskDialog("Import Schedule Round-Trip");
             confirm.MainInstruction = "Apply CSV values to the identified model elements?";
             confirm.MainContent = (rows.Count - 1) + " data rows and " + columns.Count +
@@ -145,6 +177,7 @@ namespace ElecKit.Commands
 
             int updatedElements = 0, updatedParameters = 0, skippedRows = 0, failedValues = 0;
             var issues = new List<string>();
+            var appliedTypeParameters = new HashSet<string>(StringComparer.Ordinal);
             ctx.Transact("Import native schedule rows", () =>
             {
                 for (int r = 1; r < rows.Count; r++)
@@ -176,6 +209,13 @@ namespace ElecKit.Commands
                         Parameter parameter = parameterOwner == null
                             ? null
                             : parameterOwner.get_Parameter(new ElementId(column.ParameterId));
+                        string typeParameterKey = column.IsTypeParameter && parameterOwner != null
+                            ? parameterOwner.Id.IntegerValue.ToString(CultureInfo.InvariantCulture) + ":" +
+                                column.ParameterId.ToString(CultureInfo.InvariantCulture)
+                            : null;
+                        if (column.IsTypeParameter && typeParameterKey != null &&
+                            appliedTypeParameters.Contains(typeParameterKey))
+                            continue;
                         if (parameter == null || parameter.IsReadOnly)
                         {
                             failedValues++;
@@ -211,7 +251,12 @@ namespace ElecKit.Commands
                                     }
                                     break;
                             }
-                            if (ok) { updatedParameters++; changed = true; }
+                            if (ok)
+                            {
+                                updatedParameters++;
+                                changed = true;
+                                if (typeParameterKey != null) appliedTypeParameters.Add(typeParameterKey);
+                            }
                             else
                             {
                                 failedValues++;
