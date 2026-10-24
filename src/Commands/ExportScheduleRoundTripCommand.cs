@@ -148,7 +148,7 @@ namespace ElecKit.Commands
                 bool writableForEveryRow = elements.All(element =>
                 {
                     Element owner = column.IsTypeParameter ? ctx.Doc.GetElement(element.GetTypeId()) : element;
-                    Parameter parameter = owner == null ? null : owner.get_Parameter(new ElementId(column.ParameterId));
+                    Parameter parameter = owner == null ? null : ResolveParameter(ctx.Doc, owner, new ElementId(column.ParameterId));
                     return parameter != null && !parameter.IsReadOnly &&
                         parameter.StorageType != StorageType.None;
                 });
@@ -187,7 +187,7 @@ namespace ElecKit.Commands
                     Element parameterOwner = column.IsTypeParameter
                         ? ctx.Doc.GetElement(element.GetTypeId())
                         : element;
-                    Parameter parameter = parameterOwner == null ? null : parameterOwner.get_Parameter(new ElementId(column.ParameterId));
+                    Parameter parameter = parameterOwner == null ? null : ResolveParameter(ctx.Doc, parameterOwner, new ElementId(column.ParameterId));
                     string value = "";
                     if (parameter != null)
                     {
@@ -237,7 +237,7 @@ namespace ElecKit.Commands
                 Element owner = schedulable.FieldType == ScheduleFieldType.ElementType
                     ? doc.GetElement(element.GetTypeId())
                     : element;
-                Parameter parameter = owner == null ? null : owner.get_Parameter(schedulable.ParameterId);
+                Parameter parameter = owner == null ? null : ResolveParameter(doc, owner, schedulable.ParameterId);
                 if (parameter == null)
                     throw new InvalidOperationException("Cannot resolve filter parameter: " + field.GetName());
 
@@ -315,6 +315,17 @@ namespace ElecKit.Commands
             if (parameter.StorageType == StorageType.ElementId && filter.IsElementIdValue)
                 return parameter.AsElementId() == filter.GetElementIdValue();
             throw new InvalidOperationException("Filter value type does not match parameter storage type.");
+        }
+
+
+        private static Parameter ResolveParameter(Document doc, Element owner, ElementId parameterId)
+        {
+            if (owner == null || parameterId == null || parameterId == ElementId.InvalidElementId)
+                return null;
+            if (parameterId.IntegerValue < 0)
+                return owner.get_Parameter((BuiltInParameter)parameterId.IntegerValue);
+            ParameterElement parameterElement = doc.GetElement(parameterId) as ParameterElement;
+            return parameterElement == null ? null : owner.get_Parameter(parameterElement.GetDefinition());
         }
 
     }
