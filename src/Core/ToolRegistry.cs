@@ -96,7 +96,7 @@ namespace ElecKit.Core
               typeof(AssignWorksetCommand)),
 
             T("SmartFilter", "Smart\nFilter", "Model",
-              "Pick an element and select matching instances by type, category, or exact parameter value in the active view; optionally temporarily isolate the matches.",
+              "Pick a reference element and combine up to 12 type, category, or exact parameter-value rules with AND/OR logic in the active view; optionally temporarily isolate matches.",
               typeof(SmartFilterCommand)),
 
             T("ClashDetection", "Clash\nReview", "Model",
