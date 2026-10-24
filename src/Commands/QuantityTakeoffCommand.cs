@@ -113,6 +113,28 @@ namespace ElecKit.Commands
             if (rows.Count == 0)
             {
                 string emptyMessage = "No supported elements were found in the active view for the selected scope.";
+                var auditSave = new SaveFileDialog
+                {
+                    Title = "Save empty-model category verification report",
+                    Filter = "CSV (*.csv)|*.csv",
+                    FileName = "ElecKit_QuantityTakeoff_CategoryAudit_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv",
+                    AddExtension = true,
+                    DefaultExt = ".csv"
+                };
+                if (auditSave.ShowDialog() == true)
+                {
+                    var emptyAuditCsv = new StringBuilder();
+                    emptyAuditCsv.AppendLine("Category,Elements Found,Elements With Length,Total Length (mm),Status");
+                    foreach (CategoryAudit audit in categoryAudits)
+                        emptyAuditCsv.AppendLine(string.Join(",",
+                            Csv.Escape(audit.Category),
+                            audit.ElementsFound.ToString(CultureInfo.InvariantCulture),
+                            audit.ElementsWithLength.ToString(CultureInfo.InvariantCulture),
+                            audit.TotalLengthMm.ToString("0.##", CultureInfo.InvariantCulture),
+                            Csv.Escape(audit.Status)));
+                    File.WriteAllText(auditSave.FileName, emptyAuditCsv.ToString(), new UTF8Encoding(true));
+                    emptyMessage += "\n\nCategory audit saved to:\n" + auditSave.FileName;
+                }
                 if (categoryErrors.Count > 0)
                     emptyMessage += "\n\nCategories that could not be scanned:\n" + string.Join("\n", categoryErrors.Take(10));
                 TaskDialog.Show("Quantity Takeoff", emptyMessage);
