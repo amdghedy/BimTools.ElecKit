@@ -16,7 +16,7 @@ namespace ElecKit.Commands
     [Transaction(TransactionMode.ReadOnly)]
     public class QuantityTakeoffCommand : ElecCommand
     {
-        private static readonly BuiltInCategory[] Categories =
+        private static readonly BuiltInCategory[] ElectricalCategories =
         {
             BuiltInCategory.OST_ElectricalEquipment, BuiltInCategory.OST_ElectricalFixtures,
             BuiltInCategory.OST_LightingFixtures, BuiltInCategory.OST_LightingDevices,
@@ -25,6 +25,13 @@ namespace ElecKit.Commands
             BuiltInCategory.OST_Wire, BuiltInCategory.OST_DataDevices,
             BuiltInCategory.OST_TelephoneDevices, BuiltInCategory.OST_SecurityDevices,
             BuiltInCategory.OST_FireAlarmDevices, BuiltInCategory.OST_CommunicationDevices
+        };
+
+        private static readonly BuiltInCategory[] AdditionalMepCategories =
+        {
+            BuiltInCategory.OST_MechanicalEquipment, BuiltInCategory.OST_DuctCurves,
+            BuiltInCategory.OST_DuctFitting, BuiltInCategory.OST_PipeCurves,
+            BuiltInCategory.OST_PipeFitting
         };
 
         private sealed class TakeoffRow
@@ -39,8 +46,23 @@ namespace ElecKit.Commands
             if (ctx.Doc.ActiveView is ViewSchedule)
             { TaskDialog.Show("Quantity Takeoff", "Open a model view and run the command again."); return Result.Cancelled; }
 
+            var scope = new TaskDialog("Quantity Takeoff");
+            scope.MainInstruction = "Choose the quantity takeoff scope.";
+            scope.MainContent = "Exports grouped instance counts and curve lengths in millimetres from the active view.";
+            scope.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Electrical categories",
+                "Electrical equipment/devices, conduit, cable tray and wire.");
+            scope.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "All supported MEP categories",
+                "Electrical categories plus mechanical equipment, ductwork and pipework.");
+            scope.CommonButtons = TaskDialogCommonButtons.Cancel;
+            TaskDialogResult scopeResult = scope.Show();
+            if (scopeResult != TaskDialogResult.CommandLink1 && scopeResult != TaskDialogResult.CommandLink2)
+                return Result.Cancelled;
+            BuiltInCategory[] selectedCategories = scopeResult == TaskDialogResult.CommandLink1
+                ? ElectricalCategories
+                : ElectricalCategories.Concat(AdditionalMepCategories).ToArray();
+
             var rows = new List<TakeoffRow>();
-            foreach (BuiltInCategory cat in Categories)
+            foreach (BuiltInCategory cat in selectedCategories)
             {
                 try
                 {
