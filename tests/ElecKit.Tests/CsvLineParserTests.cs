@@ -55,17 +55,17 @@ namespace ElecKit.Tests
         [Fact]
         public void ParsesWholeDocumentWithNewlineInsideQuotedCell()
         {
-            var rows = CsvLineParser.ParseRecords("ElementId,Comments\\r\\n42,\"First line\\r\\nSecond line\"\\r\\n43,OK\\r\\n");
+            var rows = CsvLineParser.ParseRecords("ElementId,Comments\r\n42,\"First line\r\nSecond line\"\r\n43,OK\r\n");
             Assert.Equal(3, rows.Count);
             Assert.Equal(new[] { "ElementId", "Comments" }, rows[0]);
-            Assert.Equal(new[] { "42", "First line\\r\\nSecond line" }, rows[1]);
+            Assert.Equal(new[] { "42", "First line\r\nSecond line" }, rows[1]);
             Assert.Equal(new[] { "43", "OK" }, rows[2]);
         }
 
         [Fact]
         public void ParsesWholeDocumentWithEscapedQuotesAndTrailingEmptyCell()
         {
-            var rows = CsvLineParser.ParseRecords("Id,Value,\\n1,\"A \"\"quoted\"\" value\",\\n");
+            var rows = CsvLineParser.ParseRecords("Id,Value,\n1,\"A \"\"quoted\"\" value\",\n");
             Assert.Equal(2, rows.Count);
             Assert.Equal(new[] { "1", "A \"quoted\" value", "" }, rows[1]);
         }
@@ -73,7 +73,7 @@ namespace ElecKit.Tests
         [Fact]
         public void RejectsUnterminatedQuoteInWholeDocument()
         {
-            Assert.Throws<FormatException>(() => CsvLineParser.ParseRecords("Id,Comments\\n1,\"unfinished"));
+            Assert.Throws<FormatException>(() => CsvLineParser.ParseRecords("Id,Comments\n1,\"unfinished"));
         }
     }
 }
