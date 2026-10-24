@@ -23,18 +23,20 @@ namespace ElecKit.Commands
         {
             int fittingKind = Dialogs.Choose("Connect Cable Tray Fitting", "Choose fitting type and then select trays in order:",
                 new System.Collections.Generic.List<string> {
-                    "Elbow (2 trays)", "Transition / reducer (2 trays)", "Tee (main run first, branch third)"
+                    "Elbow (2 trays)", "Transition / reducer (2 trays)", "Tee (main run first, branch third)", "Cross (two main-run segments first, two branch-run segments last)"
                 }, 0);
             if (fittingKind < 0 || fittingKind > 2) return Result.Cancelled;
 
-            int required = fittingKind == 2 ? 3 : 2;
+            int required = fittingKind == 2 ? 3 : fittingKind == 3 ? 4 : 2;
             IList<Reference> picked;
             try
             {
                 picked = ctx.UiDoc.Selection.PickObjects(ObjectType.Element, new TrayFilter(),
                     fittingKind == 2
                         ? "Select exactly three cable trays: main run first, second main segment second, branch third"
-                        : "Select exactly two cable trays whose end connectors should meet");
+                        : fittingKind == 3
+                            ? "Select exactly four cable trays: two main-run segments first, then two branch-run segments"
+                            : "Select exactly two cable trays whose end connectors should meet");
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
 
@@ -72,8 +74,10 @@ namespace ElecKit.Commands
                             ctx.Doc.Create.NewElbowFitting(selectedConnectors[0], selectedConnectors[1]);
                         else if (fittingKind == 1)
                             ctx.Doc.Create.NewTransitionFitting(selectedConnectors[0], selectedConnectors[1]);
-                        else
+                        else if (fittingKind == 2)
                             ctx.Doc.Create.NewTeeFitting(selectedConnectors[0], selectedConnectors[1], selectedConnectors[2]);
+                        else
+                            ctx.Doc.Create.NewCrossFitting(selectedConnectors[0], selectedConnectors[1], selectedConnectors[2], selectedConnectors[3]);
                         sub.Commit();
                     }
                     catch (Exception ex)
@@ -94,7 +98,7 @@ namespace ElecKit.Commands
             }
 
             TaskDialog.Show("Connect Cable Tray Fitting",
-                (fittingKind == 0 ? "Elbow" : fittingKind == 1 ? "Transition/reducer" : "Tee") +
+                (fittingKind == 0 ? "Elbow" : fittingKind == 1 ? "Transition/reducer" : fittingKind == 2 ? "Tee" : "Cross") +
                 " fitting created successfully. Verify connector continuity and clearances before issue.");
             return Result.Succeeded;
         }
@@ -122,7 +126,7 @@ namespace ElecKit.Commands
                     if (distance < maxSpread) { maxSpread = distance; best = new[] { a, b }; }
                 }
             }
-            else
+            else if (sets.Count == 3)
             {
                 double bestScore = double.MaxValue;
                 foreach (Connector a in sets[0])
@@ -139,6 +143,27 @@ namespace ElecKit.Commands
                         bestScore = score;
                         maxSpread = spread;
                         best = new[] { a, b, c };
+                    }
+                }
+            }
+            else if (sets.Count == 4)
+            {
+                double bestScore = double.MaxValue;
+                foreach (Connector a in sets[0])
+                foreach (Connector b in sets[1])
+                foreach (Connector c in sets[2])
+                foreach (Connector d in sets[3])
+                {
+                    double ab = a.Origin.DistanceTo(b.Origin), ac = a.Origin.DistanceTo(c.Origin);
+                    double ad = a.Origin.DistanceTo(d.Origin), bc = b.Origin.DistanceTo(c.Origin);
+                    double bd = b.Origin.DistanceTo(d.Origin), cd = c.Origin.DistanceTo(d.Origin);
+                    double spread = Math.Max(Math.Max(ab, ac), Math.Max(Math.Max(ad, bc), Math.Max(bd, cd)));
+                    double score = ab + ac + ad + bc + bd + cd;
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        maxSpread = spread;
+                        best = new[] { a, b, c, d };
                     }
                 }
             }

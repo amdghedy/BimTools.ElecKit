@@ -98,4 +98,5 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - [x] Route Cable Tray supports an ordered multi-segment path with elbow fittings at turns; a failed fitting rolls back the complete path.
 
 - [x] Added a dedicated Cable Tray Fitting command for elbow, transition/reducer and tee fittings, with connector proximity preflight and rollback on Revit rejection.
-- [ ] Cable-tray crosses, automated branches, vertical risers, obstacle avoidance and geometry-aware size transitions remain advanced routing work; fitting creation is still subject to live-model routing preferences.
+- [x] Added cable-tray cross fitting and a vertical riser creation command; fitting/vertical geometry still requires live-model validation.
+- [ ] Automatic obstacle avoidance, automatic branch layout, and geometry-aware size-transition planning remain advanced routing work.
