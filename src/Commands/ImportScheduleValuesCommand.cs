@@ -21,7 +21,7 @@ namespace ElecKit.Commands
             if (dlg.ShowDialog() != true) return Result.Cancelled;
             var rows = File.ReadAllLines(dlg.FileName, Encoding.UTF8)
                 .Where(l => !string.IsNullOrWhiteSpace(l) && !l.TrimStart().StartsWith("#", StringComparison.Ordinal))
-                .Select(ParseCsv).ToList();
+                .Select(CsvLineParser.Parse).ToList();
             if (rows.Count < 2) { TaskDialog.Show("Import Values", "CSV must contain a header and at least one data row."); return Result.Cancelled; }
 
             string[] header = rows[0].Select(s => s.Trim().TrimStart('\uFEFF')).ToArray();
@@ -154,24 +154,5 @@ namespace ElecKit.Commands
             return -1;
         }
 
-        private static string[] ParseCsv(string line)
-        {
-            var result = new List<string>();
-            var cell = new StringBuilder();
-            bool quoted = false;
-            for (int i = 0; i < line.Length; i++)
-            {
-                char ch = line[i];
-                if (ch == '"')
-                {
-                    if (quoted && i + 1 < line.Length && line[i + 1] == '"') { cell.Append('"'); i++; }
-                    else quoted = !quoted;
-                }
-                else if (ch == ',' && !quoted) { result.Add(cell.ToString()); cell.Clear(); }
-                else cell.Append(ch);
-            }
-            result.Add(cell.ToString());
-            return result.ToArray();
-        }
     }
 }
