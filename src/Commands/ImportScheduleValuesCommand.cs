@@ -19,9 +19,19 @@ namespace ElecKit.Commands
         {
             var dlg = new OpenFileDialog { Title = "Import Schedule Values", Filter = "CSV (*.csv)|*.csv", CheckFileExists = true };
             if (dlg.ShowDialog() != true) return Result.Cancelled;
-            var rows = File.ReadAllLines(dlg.FileName, Encoding.UTF8)
-                .Where(l => !string.IsNullOrWhiteSpace(l) && !l.TrimStart().StartsWith("#", StringComparison.Ordinal))
-                .Select(CsvLineParser.Parse).ToList();
+            List<string[]> rows;
+            try
+            {
+                rows = File.ReadAllLines(dlg.FileName, Encoding.UTF8)
+                    .Where(l => !string.IsNullOrWhiteSpace(l) && !l.TrimStart().StartsWith("#", StringComparison.Ordinal))
+                    .Select(CsvLineParser.Parse).ToList();
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is FormatException)
+            {
+                Log.Error(ex);
+                TaskDialog.Show("Import Values", "The CSV could not be read. Check file access and quoting, then try again.\n\n" + ex.Message);
+                return Result.Cancelled;
+            }
             if (rows.Count < 2) { TaskDialog.Show("Import Values", "CSV must contain a header and at least one data row."); return Result.Cancelled; }
 
             string[] header = rows[0].Select(s => s.Trim().TrimStart('\uFEFF')).ToArray();
