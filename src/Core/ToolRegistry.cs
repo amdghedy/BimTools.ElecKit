@@ -91,6 +91,10 @@ namespace ElecKit.Core
               "Exports the open schedule view to a single CSV file.",
               typeof(ExportActiveScheduleCommand)),
 
+            T("SmartFilter", "Smart\nFilter", "Model",
+              "Pick an element and select matching instances by type or category in the active view. Selection only; no model changes.",
+              typeof(SmartFilterCommand)),
+
             T("ClashDetection", "Clash\nReview", "Model",
               "Exports MEP bounding-box overlap candidates from the active view to CSV. Treat results as screening candidates and verify exact geometry.",
               typeof(ClashDetectionCommand)),
