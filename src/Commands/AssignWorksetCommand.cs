@@ -29,11 +29,11 @@ namespace ElecKit.Commands
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
 
             var elements = new List<Element>();
-            var seen = new HashSet<int>();
+            var seen = new HashSet<long>();
             foreach (Reference reference in picked)
             {
                 Element e = ctx.Doc.GetElement(reference);
-                if (e != null && !(e is ElementType) && seen.Add(e.Id.IntegerValue)) elements.Add(e);
+                if (e != null && !(e is ElementType) && seen.Add(e.Id.Value)) elements.Add(e);
             }
             if (elements.Count == 0)
             {
@@ -74,7 +74,7 @@ namespace ElecKit.Commands
                             if (failures.Count < 10) failures.Add(e.Id.IntegerValue + ": workset parameter unavailable/read-only");
                             continue;
                         }
-                        if (p.AsElementId().IntegerValue == target.Id.IntegerValue) { unchanged++; continue; }
+                        if (p.AsElementId().Value == target.Id.IntegerValue) { unchanged++; continue; }
                         if (!p.Set(new ElementId(target.Id.IntegerValue)))
                         {
                             failed++;
