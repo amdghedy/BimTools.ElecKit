@@ -148,6 +148,7 @@ namespace ElecKit.Commands
         {
             foreach (BuiltInCategory category in Categories)
             {
+                if (items.Count > MaxElements) return;
                 try
                 {
                     foreach (Element e in new FilteredElementCollector(doc, view.Id)
@@ -173,6 +174,7 @@ namespace ElecKit.Commands
         {
             foreach (BuiltInCategory category in Categories)
             {
+                if (items.Count > MaxElements) return;
                 try
                 {
                     foreach (Element e in new FilteredElementCollector(linkedDoc)
