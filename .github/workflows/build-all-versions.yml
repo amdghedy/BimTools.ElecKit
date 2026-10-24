@@ -40,7 +40,7 @@ jobs:
           Get-FileHash "$dir/ElecKit.dll" -Algorithm SHA256 | Format-List
       - uses: actions/upload-artifact@v4
         with:
-          name: ElecKit-Revit${{ matrix.revit }}
+          name: ElecKit-Revit-${{ matrix.revit }}
           path: artifacts/Revit${{ matrix.revit }}/*
           if-no-files-found: error
   test:
