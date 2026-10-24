@@ -18,7 +18,7 @@ namespace ElecKit.Commands
         {
             public RuleKind Kind;
             public ElementId TypeId;
-            public int CategoryId;
+            public long CategoryId;
             public string ParameterName;
             public string ParameterValue;
             public StorageType StorageType;
