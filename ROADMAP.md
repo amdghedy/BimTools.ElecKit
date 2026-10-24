@@ -51,11 +51,13 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - [ ] Transaction consistency: audit conversion and creation commands for clear rollback behavior and partial-success reporting.
 - [x] Ribbon startup: suppress only the known “tab already exists” condition; surface unrelated startup failures.
 - [x] Deployment: Debug copy failures are no longer suppressed by `ContinueOnError`.
-- [ ] Automated tests: add testable pure logic for geometry, filtering, CSV parsing, parameter mapping and unit conversions where practical.\n- [ ] Data import validation: reject duplicate parameter headers and verify the import file contains unique row keys before applying changes.\n- [ ] Quantity takeoff: test each supported category and confirm the active view is a valid model view; add regression fixtures for grouped totals and curve-length conversion.
+- [x] Automated tests: added a .NET 8 xUnit project and six regression tests for CSV record parsing (empty/trailing cells, quoted delimiters, escaped quotes, malformed quoting, null input). GitHub Actions runs these tests. Revit-dependent geometry, parameter mapping and quantity logic still need separate tests.
+- [x] Data import validation: rejects duplicate parameter headers and duplicate row keys before transaction; malformed CSV quoting and file-access errors now produce a user-facing cancellation message.
+- [ ] Quantity takeoff: test each supported category and confirm the active view is a valid model view; add regression fixtures for grouped totals and curve-length conversion.
 - [ ] Documentation: maintain a command inventory and clearly distinguish source-present, CI-build-passing and Revit-runtime-tested states.
 - [ ] Remove or archive `fix-revit2020-compile.patch` once its changes are confirmed to be incorporated and no longer needed.
 
-## Recommended implementation order
+## Automated regression tests\n\nThe `tests/ElecKit.Tests` project targets .NET 8 so pure logic can be exercised in GitHub Actions without installing Revit. The production `CsvLineParser` is linked directly into that test project and is also used by the Revit CSV importer. This does not replace Revit 2020 integration testing.\n\n## Recommended implementation order
 
 1. Fix and regression-test data-loss risks before adding more commands.
 2. Stabilize transaction handling, startup diagnostics and deployment feedback.
