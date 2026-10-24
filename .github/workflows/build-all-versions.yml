@@ -26,12 +26,12 @@ jobs:
       - name: Restore
         run: dotnet restore ElecKit.csproj -p:RevitVersion=${{ matrix.revit }}
       - name: Build version-specific add-in
-        run: dotnet build ElecKit.csproj -c Release --no-restore -p:RevitVersion=${{ matrix.revit }} -p:OutputPath=artifacts/Revit${{ matrix.revit }}/
+        run: dotnet build ElecKit.csproj -c Release --no-restore -p:RevitVersion=${{ matrix.revit }} -p:OutputPath=RevitVersions/Revit${{ matrix.revit }}/
       - name: Stage manifest and verify package
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $dir = "artifacts/Revit${{ matrix.revit }}"
+          $dir = "RevitVersions/Revit${{ matrix.revit }}"
           if (!(Test-Path "$dir/ElecKit.dll")) { throw "Build output missing: $dir/ElecKit.dll" }
           Copy-Item "ElecKit.addin" "$dir/ElecKit.addin" -Force
           $manifest = [xml](Get-Content "$dir/ElecKit.addin" -Raw)
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ElecKit-Revit-${{ matrix.revit }}
-          path: artifacts/Revit${{ matrix.revit }}/*
+          path: RevitVersions/Revit${{ matrix.revit }}/*
           if-no-files-found: error
   test:
     runs-on: windows-latest
@@ -61,15 +61,15 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: ElecKit-Revit-*
-          path: artifacts
+          path: OtherFiles
           merge-multiple: false
       - name: Normalize artifact folders
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           foreach ($v in 2020..2027) {
-            $source = "artifacts/ElecKit-Revit-$v"
-            $dest = "artifacts/Revit$v"
+            $source = "OtherFiles/ElecKit-Revit-$v"
+            $dest = "RevitVersions/Revit$v"
             if (!(Test-Path "$source/ElecKit.dll")) { throw "Missing build artifact for Revit $v." }
             if (!(Test-Path "$source/ElecKit.addin")) { throw "Missing manifest for Revit $v." }
             New-Item -ItemType Directory -Force -Path $dest | Out-Null
@@ -84,11 +84,11 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $iscc = Join-Path $env:ProgramFiles 'Inno Setup 6/ISCC.exe'
           if (!(Test-Path $iscc)) { throw "Inno Setup compiler not found: $iscc" }
-          & $iscc "installer/ElecKit.iss"
+          & $iscc "EXE/ElecKit.iss"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
-          if (!(Test-Path 'installer/dist/ElecKit-Setup.exe')) { throw 'Installer EXE was not created.' }
+          if (!(Test-Path 'EXE/dist/ElecKit-Setup.exe')) { throw 'Installer EXE was not created.' }
       - uses: actions/upload-artifact@v4
         with:
           name: ElecKit-Setup-EXE
-          path: installer/dist/ElecKit-Setup.exe
+          path: EXE/dist/ElecKit-Setup.exe
           if-no-files-found: error
