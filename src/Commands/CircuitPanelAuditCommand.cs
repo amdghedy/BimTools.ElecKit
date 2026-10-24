@@ -20,8 +20,8 @@ namespace ElecKit.Commands
         {
             var systems = new FilteredElementCollector(ctx.Doc).OfClass(typeof(ElectricalSystem))
                 .Cast<ElectricalSystem>().OrderBy(s => s.PanelName).ThenBy(s => s.CircuitNumber).ToList();
-            var panelLoadTotals = new Dictionary<int, double>();
-            var panelLoadComplete = new Dictionary<int, bool>();
+            var panelLoadTotals = new Dictionary<long, double>();
+            var panelLoadComplete = new Dictionary<long, bool>();
             foreach (ElectricalSystem system in systems)
             {
                 FamilyInstance assigned = null;
