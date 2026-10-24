@@ -14,7 +14,7 @@ using ElecKit.Core;
 namespace ElecKit.Commands
 {
     /// <summary>
-    /// Screens host-host and host-linked MEP bounding-box candidates, then checks positive-volume solid intersections.
+    /// Screens host-host, host-linked and linked-linked MEP bounding-box candidates, then checks positive-volume solid intersections.
     /// Linked geometry is transformed into host coordinates; geometry failures are marked for manual review.
     /// </summary>
     [Transaction(TransactionMode.ReadOnly)]
@@ -102,8 +102,7 @@ namespace ElecKit.Commands
             {
                 for (int j = i + 1; j < items.Count; j++)
                 {
-                    // Do not report link-to-link pairs; each link is compared against host elements.
-                    if (items[i].IsLinked && items[j].IsLinked) continue;
+                    // All items are normalized to host coordinates, so link-to-link comparisons are valid.
                     if (!Overlaps(items[i].Box, items[j].Box)) continue;
 
                     string method = SolidIntersectionStatus(items[i].Solids, items[j].Solids);
@@ -136,7 +135,7 @@ namespace ElecKit.Commands
             foreach (string[] row in clashes)
                 csv.AppendLine(string.Join(",", row.Select(Csv.Escape)));
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
-            TaskDialog.Show("Clash Review", clashes.Count + " host-host/host-linked bounding-box overlap candidates exported. " +
+            TaskDialog.Show("Clash Review", clashes.Count + " host-host/host-linked/linked-linked bounding-box overlap candidates exported. " +
                 "Positive-volume solid intersections are confirmed where Revit geometry permits; unavailable or failed checks need manual review. " +
                 "This is not a clearance check.\\n\\n" + dlg.FileName);
             if (!ElecSettings.Current.DoNotOpenReports)
