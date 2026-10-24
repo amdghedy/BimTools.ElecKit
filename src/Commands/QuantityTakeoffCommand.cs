@@ -50,7 +50,7 @@ namespace ElecKit.Commands
                         Category = LabelUtils.GetLabelFor(cat),
                         Family = e is FamilyInstance ? (((FamilyInstance)e).Symbol == null ? "" : ((FamilyInstance)e).Symbol.FamilyName) : "",
                         Type = ctx.Doc.GetElement(e.GetTypeId()) == null ? e.Name : ctx.Doc.GetElement(e.GetTypeId()).Name,
-                        Level = LevelName(e)
+                        Level = LevelName(ctx.Doc, e)
                     }))
                     {
                         double length = 0;
@@ -86,7 +86,7 @@ namespace ElecKit.Commands
             return Result.Succeeded;
         }
 
-        private static string LevelName(Element e)
+        private static string LevelName(Document doc, Element e)
         {
             Parameter p = e.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM)
                 ?? e.get_Parameter(BuiltInParameter.RBS_START_LEVEL_PARAM)
@@ -95,7 +95,9 @@ namespace ElecKit.Commands
             if (p.StorageType == StorageType.ElementId)
             {
                 ElementId id = p.AsElementId();
-                return id == ElementId.InvalidElementId ? "" : id.IntegerValue.ToString(CultureInfo.InvariantCulture);
+                if (id == ElementId.InvalidElementId) return "";
+                Level level = doc.GetElement(id) as Level;
+                return level == null ? id.IntegerValue.ToString(CultureInfo.InvariantCulture) : level.Name;
             }
             return p.AsValueString() ?? p.AsString() ?? "";
         }
