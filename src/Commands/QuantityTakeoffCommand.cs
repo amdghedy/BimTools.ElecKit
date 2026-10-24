@@ -62,6 +62,7 @@ namespace ElecKit.Commands
                 : ElectricalCategories.Concat(AdditionalMepCategories).ToArray();
 
             var rows = new List<TakeoffRow>();
+            var categoryErrors = new List<string>();
             foreach (BuiltInCategory cat in selectedCategories)
             {
                 try
@@ -85,10 +86,20 @@ namespace ElecKit.Commands
                             Type = group.Key.Type, Level = group.Key.Level, Quantity = group.Count(), LengthMm = length });
                     }
                 }
-                catch (Exception ex) { Log.Error(ex); }
+                catch (Exception ex)
+                {
+                    Log.Error(ex);
+                    categoryErrors.Add(cat.ToString() + ": " + ex.Message);
+                }
             }
             if (rows.Count == 0)
-            { TaskDialog.Show("Quantity Takeoff", "No supported electrical elements were found in the active view."); return Result.Succeeded; }
+            {
+                string emptyMessage = "No supported elements were found in the active view for the selected scope.";
+                if (categoryErrors.Count > 0)
+                    emptyMessage += "\\n\\nCategories that could not be scanned:\\n" + string.Join("\\n", categoryErrors.Take(10));
+                TaskDialog.Show("Quantity Takeoff", emptyMessage);
+                return categoryErrors.Count > 0 ? Result.Failed : Result.Succeeded;
+            }
 
             var dlg = new SaveFileDialog { Title = "Export Electrical Quantity Takeoff", Filter = "CSV (*.csv)|*.csv",
                 FileName = "ElecKit_QuantityTakeoff_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv",
