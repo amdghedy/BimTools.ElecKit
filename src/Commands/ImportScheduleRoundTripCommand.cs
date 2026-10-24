@@ -208,7 +208,7 @@ namespace ElecKit.Commands
                             : element;
                         Parameter parameter = parameterOwner == null
                             ? null
-                            : parameterOwner.get_Parameter(new ElementId(column.ParameterId));
+                            : ResolveParameter(ctx.Doc, parameterOwner, new ElementId(column.ParameterId));
                         string typeParameterKey = column.IsTypeParameter && parameterOwner != null
                             ? parameterOwner.Id.IntegerValue.ToString(CultureInfo.InvariantCulture) + ":" +
                                 column.ParameterId.ToString(CultureInfo.InvariantCulture)
@@ -280,5 +280,16 @@ namespace ElecKit.Commands
             TaskDialog.Show("Import Schedule Round-Trip", summary);
             return Result.Succeeded;
         }
+
+        private static Parameter ResolveParameter(Document doc, Element owner, ElementId parameterId)
+        {
+            if (owner == null || parameterId == null || parameterId == ElementId.InvalidElementId)
+                return null;
+            if (parameterId.IntegerValue < 0)
+                return owner.get_Parameter((BuiltInParameter)parameterId.IntegerValue);
+            ParameterElement parameterElement = doc.GetElement(parameterId) as ParameterElement;
+            return parameterElement == null ? null : owner.get_Parameter(parameterElement.GetDefinition());
+        }
+
     }
 }
