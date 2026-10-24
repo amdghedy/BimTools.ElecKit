@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -19,6 +20,29 @@ namespace ElecKit.Commands
         {
             var systems = new FilteredElementCollector(ctx.Doc).OfClass(typeof(ElectricalSystem))
                 .Cast<ElectricalSystem>().OrderBy(s => s.PanelName).ThenBy(s => s.CircuitNumber).ToList();
+            var panelLoadTotals = new Dictionary<int, double>();
+            var panelLoadComplete = new Dictionary<int, bool>();
+            foreach (ElectricalSystem system in systems)
+            {
+                FamilyInstance assigned = null;
+                try { assigned = system.BaseEquipment; } catch { }
+                if (assigned == null) continue;
+                int panelId = assigned.Id.IntegerValue;
+                double? load = ReadApparentLoadVa(system);
+                if (!panelLoadTotals.ContainsKey(panelId))
+                {
+                    panelLoadTotals[panelId] = 0.0;
+                    panelLoadComplete[panelId] = true;
+                }
+                if (!load.HasValue) panelLoadComplete[panelId] = false;
+                else
+                {
+                    panelLoadTotals[panelId] += load.Value;
+                    if (double.IsNaN(panelLoadTotals[panelId]) || double.IsInfinity(panelLoadTotals[panelId]))
+                        panelLoadComplete[panelId] = false;
+                }
+            }
+
             var rows = new StringBuilder();
             rows.AppendLine("SystemElementId,Panel,Circuit,Load,ConnectedElements,CircuitVoltage,PanelVoltage,CircuitPoles,PanelPoles,CircuitApparentLoadVA,DeclaredPanelCapacityVA,Status,Findings");
             int errors = 0, warnings = 0;
@@ -40,7 +64,12 @@ namespace ElecKit.Commands
                 if (!loadVa.HasValue && loadParameter != null && loadParameter.StorageType == StorageType.Double && loadParameter.AsDouble() >= 0)
                     loadVa = loadParameter.AsDouble();
                 double? capacityVa = panel == null ? null : ReadCapacityVa(panel);
-                CircuitPanelCheck check = CircuitPanelValidation.Evaluate(circuitVoltage, panelVoltage, circuitPoles, panelPoles, loadVa, capacityVa);
+                double? existingPanelLoadVa = null;
+                if (panel != null && loadVa.HasValue && panelLoadComplete.ContainsKey(panel.Id.IntegerValue) &&
+                    panelLoadComplete[panel.Id.IntegerValue])
+                    existingPanelLoadVa = Math.Max(0.0, panelLoadTotals[panel.Id.IntegerValue] - loadVa.Value);
+                CircuitPanelCheck check = CircuitPanelValidation.Evaluate(
+                    circuitVoltage, panelVoltage, circuitPoles, panelPoles, loadVa, capacityVa, existingPanelLoadVa);
                 if (check.Errors.Count > 0) errors++;
                 if (check.Warnings.Count > 0) warnings++;
                 string findings = string.Join(" | ", check.Errors.Concat(check.Warnings));
