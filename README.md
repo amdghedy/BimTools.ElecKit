@@ -127,7 +127,7 @@ Clash Review screens host-model elements against other host elements and loaded 
 ### Additional native gap-closure tools
 
 - **Circuit & Panel Audit** — exports conservative voltage, pole-count and explicitly declared VA-capacity checks; missing parameters are flagged for review.
-- **Route Cable Tray** — creates direct or L-shaped routes, or a multi-segment path through ordered anchors with elbows at turns; a failed fitting rolls back the whole multi-segment route.
+- **Route Cable Tray** — creates direct/L-shaped and multi-segment routes, plus an optional orthogonal obstacle-aware route using active-view bounding boxes and a user clearance threshold. Failed route pairs roll back.
 - **Lines to Cable Tray** — converts straight detail/model lines with per-segment rollback and failure reporting.
 - **Boundary to Cable Trays** — creates connected tray runs, including closed boundaries, and rolls back the entire run if a required elbow fails.
 - **Deployment Audit** — checks the Revit 2020 manifest, deployed DLL and loaded assembly hashes.
