@@ -40,6 +40,15 @@ namespace ElecKit.Commands
 
             int idCol = HeaderIndex(header, "ElementId", "Element ID", "Id");
             int markCol = HeaderIndex(header, "Mark");
+            int idAliases = header.Count(h =>
+                string.Equals(h, "ElementId", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(h, "Element ID", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(h, "Id", StringComparison.OrdinalIgnoreCase));
+            if (idAliases > 1)
+            {
+                TaskDialog.Show("Import Values", "Use only one key column: ElementId, Element ID, or Id.");
+                return Result.Cancelled;
+            }
             if (idCol < 0 && markCol < 0) { TaskDialog.Show("Import Values", "Include an ElementId or Mark column."); return Result.Cancelled; }
             // Reject duplicate row keys before opening a transaction so one element cannot be updated twice accidentally.
             int keyCol = idCol >= 0 ? idCol : markCol;
