@@ -133,6 +133,26 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
+            var omittedColumns = new List<string>();
+            columns = columns.Where(column =>
+            {
+                bool writableForEveryRow = elements.All(element =>
+                {
+                    Element owner = column.IsTypeParameter ? ctx.Doc.GetElement(element.GetTypeId()) : element;
+                    Parameter parameter = owner == null ? null : owner.get_Parameter(new ElementId(column.ParameterId));
+                    return parameter != null && !parameter.IsReadOnly &&
+                        parameter.StorageType != StorageType.None;
+                });
+                if (!writableForEveryRow) omittedColumns.Add(column.Name);
+                return writableForEveryRow;
+            }).ToList();
+            if (columns.Count == 0)
+            {
+                TaskDialog.Show("Export Schedule Round-Trip",
+                    "No visible schedule fields are writable on every row. No round-trip CSV was written.");
+                return Result.Cancelled;
+            }
+
             var dlg = new SaveFileDialog
             {
                 Title = "Export Native Schedule Rows for Round-Trip",
@@ -184,10 +204,12 @@ namespace ElecKit.Commands
             }
 
             File.WriteAllText(dlg.FileName, csv.ToString(), new UTF8Encoding(true));
-            TaskDialog.Show("Export Schedule Round-Trip",
-                "Exported " + elements.Count + " schedule element rows and " + columns.Count +
-                " direct parameter columns. Numeric values use invariant raw values (double values are Revit internal units). " +
-                "The first column is the element identity key. Review the file before importing.\n\n" + dlg.FileName);
+            string summary = "Exported " + elements.Count + " schedule element rows and " + columns.Count +
+                " writable direct parameter columns. Numeric values use invariant raw values (double values are Revit internal units). " +
+                "The first column is the element identity key. Review the file before importing.\n\n" + dlg.FileName;
+            if (omittedColumns.Count > 0)
+                summary += "\n\nOmitted non-writable/inconsistent fields: " + string.Join(", ", omittedColumns.Take(12));
+            TaskDialog.Show("Export Schedule Round-Trip", summary);
             if (!ElecSettings.Current.DoNotOpenReports)
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
             return Result.Succeeded;
