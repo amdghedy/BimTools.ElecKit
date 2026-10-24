@@ -46,13 +46,6 @@ namespace ElecKit.Commands
                     "Grouped schedules cannot be round-tripped safely because one visible row may represent multiple elements. Enable Itemize every instance and retry.");
                 return Result.Cancelled;
             }
-            if (schedule.Definition.GetFilters().Count > 0)
-            {
-                TaskDialog.Show("Export Schedule Round-Trip",
-                    "This first round-trip mode accepts schedules without schedule filters. Remove the filters or use the normal schedule export to avoid exporting rows outside the displayed schedule.");
-                return Result.Cancelled;
-            }
-
             var columns = new List<Column>();
             var seenParameterIds = new HashSet<int>();
             foreach (ScheduleFieldId fieldId in schedule.Definition.GetFieldOrder())
@@ -122,10 +115,26 @@ namespace ElecKit.Commands
                     "Revit could not enumerate the elements represented by this schedule. No CSV was written.\n\n" + ex.Message);
                 return Result.Failed;
             }
-            elements = elements
-                .Where(e => e.Category != null && e.Category.Id.IntegerValue == schedule.Definition.CategoryId.IntegerValue)
-                .OrderBy(e => e.Id.IntegerValue)
-                .ToList();
+            var scheduleElements = new List<Element>();
+            try
+            {
+                foreach (Element element in elements)
+                {
+                    if (element.Category == null ||
+                        element.Category.Id.IntegerValue != schedule.Definition.CategoryId.IntegerValue)
+                        continue;
+                    if (MatchesScheduleFilters(ctx.Doc, schedule, element))
+                        scheduleElements.Add(element);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex);
+                TaskDialog.Show("Export Schedule Round-Trip",
+                    "A schedule filter uses a field or comparison this round-trip exporter cannot safely evaluate. No CSV was written.\\n\\n" + ex.Message);
+                return Result.Failed;
+            }
+            elements = scheduleElements.OrderBy(e => e.Id.IntegerValue).ToList();
             if (elements.Count == 0)
             {
                 TaskDialog.Show("Export Schedule Round-Trip",
@@ -214,5 +223,93 @@ namespace ElecKit.Commands
                 Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true });
             return Result.Succeeded;
         }
+
+        private static bool MatchesScheduleFilters(Document doc, ViewSchedule schedule, Element element)
+        {
+            foreach (ScheduleFilter filter in schedule.Definition.GetFilters())
+            {
+                ScheduleField field = schedule.Definition.GetField(filter.FieldId);
+                SchedulableField schedulable = field.GetSchedulableField();
+                if (schedulable.FieldType != ScheduleFieldType.Instance &&
+                    schedulable.FieldType != ScheduleFieldType.ElementType)
+                    throw new InvalidOperationException("Unsupported filter field type: " + field.GetName());
+
+                Element owner = schedulable.FieldType == ScheduleFieldType.ElementType
+                    ? doc.GetElement(element.GetTypeId())
+                    : element;
+                Parameter parameter = owner == null ? null : owner.get_Parameter(schedulable.ParameterId);
+                if (parameter == null)
+                    throw new InvalidOperationException("Cannot resolve filter parameter: " + field.GetName());
+
+                bool match;
+                switch (filter.FilterType)
+                {
+                    case ScheduleFilterType.Equal:
+                    case ScheduleFilterType.NotEqual:
+                        match = CompareScheduleFilterValue(parameter, filter);
+                        if (filter.FilterType == ScheduleFilterType.NotEqual) match = !match;
+                        break;
+                    case ScheduleFilterType.Contains:
+                    case ScheduleFilterType.NotContains:
+                    case ScheduleFilterType.BeginsWith:
+                    case ScheduleFilterType.NotBeginsWith:
+                        if (parameter.StorageType != StorageType.String || !filter.IsStringValue)
+                            throw new InvalidOperationException("String filter applied to a non-string parameter: " + field.GetName());
+                        string actual = parameter.AsString() ?? string.Empty;
+                        string expected = filter.GetStringValue() ?? string.Empty;
+                        if (filter.FilterType == ScheduleFilterType.Contains)
+                            match = actual.IndexOf(expected, StringComparison.OrdinalIgnoreCase) >= 0;
+                        else if (filter.FilterType == ScheduleFilterType.NotContains)
+                            match = actual.IndexOf(expected, StringComparison.OrdinalIgnoreCase) < 0;
+                        else if (filter.FilterType == ScheduleFilterType.BeginsWith)
+                            match = actual.StartsWith(expected, StringComparison.OrdinalIgnoreCase);
+                        else
+                            match = !actual.StartsWith(expected, StringComparison.OrdinalIgnoreCase);
+                        break;
+                    case ScheduleFilterType.GreaterThan:
+                    case ScheduleFilterType.GreaterThanOrEqual:
+                    case ScheduleFilterType.LessThan:
+                    case ScheduleFilterType.LessThanOrEqual:
+                        double actualNumber;
+                        double expectedNumber;
+                        if (parameter.StorageType == StorageType.Double && filter.IsDoubleValue)
+                        {
+                            actualNumber = parameter.AsDouble();
+                            expectedNumber = filter.GetDoubleValue();
+                        }
+                        else if (parameter.StorageType == StorageType.Integer && filter.IsIntegerValue)
+                        {
+                            actualNumber = parameter.AsInteger();
+                            expectedNumber = filter.GetIntegerValue();
+                        }
+                        else
+                            throw new InvalidOperationException("Numeric filter value does not match parameter storage type: " + field.GetName());
+                        if (filter.FilterType == ScheduleFilterType.GreaterThan) match = actualNumber > expectedNumber;
+                        else if (filter.FilterType == ScheduleFilterType.GreaterThanOrEqual) match = actualNumber >= expectedNumber;
+                        else if (filter.FilterType == ScheduleFilterType.LessThan) match = actualNumber < expectedNumber;
+                        else match = actualNumber <= expectedNumber;
+                        break;
+                    default:
+                        throw new InvalidOperationException("Unsupported schedule filter type '" + filter.FilterType + "' on field " + field.GetName());
+                }
+                if (!match) return false;
+            }
+            return true;
+        }
+
+        private static bool CompareScheduleFilterValue(Parameter parameter, ScheduleFilter filter)
+        {
+            if (parameter.StorageType == StorageType.String && filter.IsStringValue)
+                return string.Equals(parameter.AsString() ?? string.Empty, filter.GetStringValue() ?? string.Empty,
+                    StringComparison.OrdinalIgnoreCase);
+            if (parameter.StorageType == StorageType.Integer && filter.IsIntegerValue)
+                return parameter.AsInteger() == filter.GetIntegerValue();
+            if (parameter.StorageType == StorageType.Double && filter.IsDoubleValue)
+                return Math.Abs(parameter.AsDouble() - filter.GetDoubleValue()) <= 1e-9;
+            if (parameter.StorageType == StorageType.ElementId && filter.IsElementIdValue)
+                return parameter.AsElementId() == filter.GetElementIdValue();
+            throw new InvalidOperationException("Filter value type does not match parameter storage type.");
+        }
+
     }
 }
