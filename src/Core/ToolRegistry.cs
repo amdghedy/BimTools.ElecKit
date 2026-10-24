@@ -123,7 +123,10 @@ namespace ElecKit.Core
               typeof(SelectByCircuitCommand)),
             T("AssignCircuitPanel", "Assign Circuit\nPanel", "Circuits",
               "Pick a circuit element and destination electrical panel to reassign the circuit. Verify electrical compatibility and panel capacity afterward.",
-              typeof(AssignCircuitPanelCommand))
+              typeof(AssignCircuitPanelCommand)),
+            T("PanelSingleLineDiagram", "Panel Single-Line\nDiagram", "Circuits",
+              "Creates a schematic drafting view for a selected electrical panel, with assigned circuits, load labels and optional CSV data export. Validate ratings and capacity separately.",
+              typeof(PanelSingleLineDiagramCommand))
         };
     }
 }
