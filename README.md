@@ -23,7 +23,7 @@ ElecKit brings frequently used electrical drafting, wiring, model-selection, and
 - **Drafting conversion:** convert supported CAD geometry and detail lines to Revit detail lines or electrical wires.
 - **Line cleanup and editing:** connect runs, split lines, fillet corners or picked lines, and clean duplicate detail-line geometry.
 - **Wiring workflows:** create home-run lines, create conduits from boundary lines, place circuit-number text, and copy wire information into conduit comments.
-- **Model navigation and coordination:** select host elements, select same-type instances, use Smart Filter to select same-type or same-category elements in the active view, assign selected elements to a user workset in a workshared model, create a 3D view around a selection, and export MEP bounding-box clash candidates for review.
+- **Model navigation and coordination:** select host elements, select same-type instances, use Smart Filter to select same-type, same-category, or same-parameter-value elements in the active view, assign selected elements to a user workset in a workshared model, create a 3D view around a selection, and export MEP clash candidates with solid-intersection checks where geometry is available.
 - **Schedule and circuit data:** export active or multiple schedules to CSV, export selected element parameters to a keyed CSV (ElementId and Mark), import parameter values from that CSV, create circuit reports, and select elements by circuit.\n- **Electrical quantity takeoff:** export grouped counts and MEP curve lengths from the active model view to CSV.
 - **Central command registry:** ribbon tools are registered centrally rather than wired individually.
 
