@@ -42,7 +42,7 @@ namespace ElecKit.Commands
             }
 
             var worksets = new List<Workset>();
-            foreach (Workset workset in WorksetTable.GetWorksets(WorksetKind.UserWorkset))
+            foreach (Workset workset in new FilteredWorksetCollector(ctx.Doc).OfKind(WorksetKind.UserWorkset).ToWorksets())
                 if (workset != null) worksets.Add(workset);
 
             if (worksets.Count == 0)
