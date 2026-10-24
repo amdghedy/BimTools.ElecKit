@@ -23,6 +23,17 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
+            10.0.x
+      - name: Apply ElementId API compatibility for Revit 2024+
+        if: ${{ matrix.revit >= 2024 }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-ChildItem 'src' -Filter '*.cs' -Recurse | ForEach-Object {
+            $original = Get-Content $_.FullName -Raw
+            $updated = $original -replace '\.IntegerValue', '.Value'
+            if ($updated -ne $original) { Set-Content -Path $_.FullName -Value $updated -NoNewline -Encoding utf8 }
+          }
       - name: Restore
         run: dotnet restore ElecKit.csproj -p:RevitVersion=${{ matrix.revit }}
       - name: Build version-specific add-in
@@ -49,7 +60,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: |
+            8.0.x
+            10.0.x
       - name: Test Revit-independent logic
         run: dotnet test tests/ElecKit.Tests/ElecKit.Tests.csproj -c Release
   installer:
