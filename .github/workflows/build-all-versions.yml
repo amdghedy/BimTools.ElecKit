@@ -33,7 +33,7 @@ jobs:
             Where-Object { $_.Name -ne 'AssignWorksetCommand.cs' } |
             ForEach-Object {
               $original = Get-Content $_.FullName -Raw
-              $updated = $original -replace '\\.IntegerValue', '.Value'
+              $updated = $original -replace '\.IntegerValue', '.Value'
               if ($updated -ne $original) { Set-Content -Path $_.FullName -Value $updated -NoNewline -Encoding utf8 }
             }
           # WorksetId intentionally retains IntegerValue in older APIs; migrate only ElementId expressions.
