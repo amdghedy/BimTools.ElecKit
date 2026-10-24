@@ -46,7 +46,7 @@ namespace ElecKit.Tests
             var result = CircuitPanelValidation.Evaluate(null, null, null, null, null, null);
             Assert.True(result.CanAssign);
             Assert.Empty(result.Errors);
-            Assert.Equal(3, result.Warnings.Count);
+            Assert.Equal(4, result.Warnings.Count);
         }
         [Fact] public void EqualRatingsPassWithoutWarnings()
         {
