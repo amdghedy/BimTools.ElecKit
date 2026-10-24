@@ -27,20 +27,41 @@ namespace ElecKit.Commands
             choice.MainContent = "Scope: active view only. This command selects elements and does not modify the model.";
             choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Same type as picked element");
             choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Same category as picked element");
+            choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Same parameter value");
             choice.CommonButtons = TaskDialogCommonButtons.Cancel;
             TaskDialogResult result = choice.Show();
             if (result == TaskDialogResult.Cancel) return Result.Cancelled;
 
             bool byType = result == TaskDialogResult.CommandLink1;
+            bool byParameter = result == TaskDialogResult.CommandLink3;
             ElementId typeId = source.GetTypeId();
             int categoryId = source.Category.Id.IntegerValue;
+            string parameterName = null, parameterValue = null;
+            Parameter sourceParameter = null;
+            if (byParameter)
+            {
+                parameterName = Dialogs.Ask("Smart Filter", "Enter the exact parameter name on the picked element:", "Mark");
+                if (string.IsNullOrWhiteSpace(parameterName)) return Result.Cancelled;
+                sourceParameter = source.LookupParameter(parameterName.Trim());
+                if (sourceParameter == null)
+                { TaskDialog.Show("Smart Filter", "The picked element does not contain a parameter named \"" + parameterName + "\"."); return Result.Cancelled; }
+                parameterValue = ParameterText(sourceParameter);
+                parameterValue = Dialogs.Ask("Smart Filter", "Enter the exact displayed value to match for parameter \"" + parameterName + "\".\nUse an empty value to match blank string parameters.", parameterValue);
+                if (parameterValue == null) return Result.Cancelled;
+            }
             var ids = new List<ElementId>();
             foreach (Element candidate in new FilteredElementCollector(ctx.Doc, ctx.Doc.ActiveView.Id).WhereElementIsNotElementType())
             {
                 if (candidate.Category == null) continue;
-                bool match = byType
-                    ? candidate.GetTypeId() == typeId
-                    : candidate.Category.Id.IntegerValue == categoryId;
+                bool match;
+                if (byParameter)
+                {
+                    Parameter candidateParameter = candidate.LookupParameter(parameterName);
+                    match = candidateParameter != null && candidateParameter.StorageType == sourceParameter.StorageType &&
+                        string.Equals(ParameterText(candidateParameter), parameterValue, StringComparison.OrdinalIgnoreCase);
+                }
+                else if (byType) match = candidate.GetTypeId() == typeId;
+                else match = candidate.Category.Id.IntegerValue == categoryId;
                 if (match) ids.Add(candidate.Id);
             }
 
@@ -49,6 +70,19 @@ namespace ElecKit.Commands
             ctx.UiDoc.Selection.SetElementIds(ids);
             TaskDialog.Show("Smart Filter", ids.Count + " element(s) selected in the active view.");
             return Result.Succeeded;
+        }
+
+        private static string ParameterText(Parameter parameter)
+        {
+            if (parameter == null) return "";
+            switch (parameter.StorageType)
+            {
+                case StorageType.String: return parameter.AsString() ?? "";
+                case StorageType.Integer: return parameter.AsValueString() ?? parameter.AsInteger().ToString(System.Globalization.CultureInfo.InvariantCulture);
+                case StorageType.Double: return parameter.AsValueString() ?? "";
+                case StorageType.ElementId: return parameter.AsValueString() ?? parameter.AsElementId().IntegerValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                default: return "";
+            }
         }
     }
 }
