@@ -2,7 +2,7 @@
 
 **An electrical productivity add-in for Autodesk Revit 2020.**
 
-ElecKit brings frequently used electrical drafting, wiring, model-selection, and schedule-export tasks into a single ribbon. It is designed to reduce repetitive work while keeping tools close to the Revit workflow.
+ElecKit brings frequently used electrical drafting, wiring, model-selection, and schedule export/import tasks into a single ribbon. It is designed to reduce repetitive work while keeping tools close to the Revit workflow.
 
 [![Build](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build.yml) [![Revit](https://img.shields.io/badge/Revit-2020-2D6DB5)](https://www.autodesk.com/products/revit/overview) [![Platform](https://img.shields.io/badge/platform-Windows-0078D4)](https://www.microsoft.com/windows)
 
@@ -24,7 +24,7 @@ ElecKit brings frequently used electrical drafting, wiring, model-selection, and
 - **Line cleanup and editing:** connect runs, split lines, fillet corners or picked lines, and clean duplicate detail-line geometry.
 - **Wiring workflows:** create home-run lines, create conduits from boundary lines, place circuit-number text, and copy wire information into conduit comments.
 - **Model navigation and coordination:** select host elements, select same-type instances, use Smart Filter to select same-type or same-category elements in the active view, create a 3D view around a selection, and export MEP bounding-box clash candidates for review.
-- **Schedule and circuit data:** export active or multiple schedules to CSV, import parameter values from a keyed CSV (ElementId or unique Mark), create circuit reports, and select elements by circuit.\n- **Electrical quantity takeoff:** export grouped counts and MEP curve lengths from the active model view to CSV.
+- **Schedule and circuit data:** export active or multiple schedules to CSV, export selected element parameters to a keyed CSV (ElementId and Mark), import parameter values from that CSV, create circuit reports, and select elements by circuit.\n- **Electrical quantity takeoff:** export grouped counts and MEP curve lengths from the active model view to CSV.
 - **Central command registry:** ribbon tools are registered centrally rather than wired individually.
 
 Feature names describe intended workflows; availability and behavior can vary by selection, view, model content, and Revit API constraints.
@@ -74,7 +74,7 @@ The workflow is defined in [`.github/workflows/build.yml`](.github/workflows/bui
 | Drafting | CAD to Detail Lines, Wires to Detail Lines, Detail Lines to Wires, Connect Runs, Lines to Conduit, Fillet tools, Split Lines, Clean Lines |
 | Wiring | Home Run Lines, Boundary to Conduits, Circuit Number Text, Wire Info to Comments, Cable Catalog |
 | Model | Select Hosts, Select Same Type, Smart Filter, 3D from Selection, Clash Review |
-| Schedules | Export All Schedules, Export Active Schedule, Import CSV Values, Quantity Takeoff |
+| Schedules | Export All Schedules, Export Active Schedule, Export Element Parameters, Import CSV Values, Quantity Takeoff |
 | Circuits | Circuit Report, Select by Circuit |
 
 The [roadmap](ROADMAP.md) records additional requested functions and their status. Planned entries are not currently available just because they appear in that document.
