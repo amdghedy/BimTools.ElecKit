@@ -91,7 +91,7 @@ namespace ElecKit.Core
               "Exports the open schedule view to a single CSV file in Revit's native schedule format.",
               typeof(ExportActiveScheduleCommand)),
             T("ExportScheduleRoundTrip", "Export Schedule\nRound-Trip", "Schedules",
-              "Exports itemized schedule rows with ElementId keys and parameter-id-qualified values for a controlled edit/import cycle. Filtered and grouped schedules are not supported in this mode.",
+              "Exports itemized single-category schedule rows with ElementId keys and parameter-id-qualified values. Supports direct parameter filters; grouped, multi-category and calculated/combined fields are not supported.",
               typeof(ExportScheduleRoundTripCommand)),
             T("ImportScheduleRoundTrip", "Import Schedule\nRound-Trip", "Schedules",
               "Imports an Export Schedule Round-Trip CSV by ElementId and parameter identity, with typed values and a per-row result summary.",
