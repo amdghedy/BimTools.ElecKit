@@ -50,7 +50,6 @@ namespace ElecKit.Commands
 
             int idCol = HeaderIndex(header, "ElementId", "Element ID", "Id");
             int markCol = HeaderIndex(header, "Mark");
-            int targetIdCol = HeaderIndex(header, "TargetElementId", "Target ElementId", "Target Element ID");
             int idAliases = header.Count(h =>
                 string.Equals(h, "ElementId", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(h, "Element ID", StringComparison.OrdinalIgnoreCase) ||
@@ -77,7 +76,7 @@ namespace ElecKit.Commands
                 }
             }
 
-            var valueCols = Enumerable.Range(0, header.Length).Where(i => i != idCol && i != markCol && i != targetIdCol && !string.IsNullOrWhiteSpace(header[i])).ToList();
+            var valueCols = Enumerable.Range(0, header.Length).Where(i => i != idCol && i != markCol && !string.IsNullOrWhiteSpace(header[i])).ToList();
             if (valueCols.Count == 0) { TaskDialog.Show("Import Values", "No parameter columns found."); return Result.Cancelled; }
 
             // Build the Mark index whenever the CSV contains Mark, even when ElementId is
@@ -167,8 +166,6 @@ namespace ElecKit.Commands
                             {
                                 int rawId;
                                 string raw = cells[c].Trim();
-                                if (targetIdCol >= 0 && targetIdCol < cells.Length && !string.IsNullOrWhiteSpace(cells[targetIdCol]))
-                                    raw = cells[targetIdCol].Trim();
                                 if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out rawId))
                                 {
                                     ElementId referenced = new ElementId(rawId);
