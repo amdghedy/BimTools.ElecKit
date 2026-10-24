@@ -124,6 +124,20 @@ namespace ElecKit.Commands
             }
             return null;
         }
+        private static double? ReadApparentLoadVa(ElectricalSystem system)
+        {
+            if (system == null) return null;
+            Parameter p = system.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD);
+            if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                !double.IsInfinity(p.AsDouble()) && p.AsDouble() >= 0) return p.AsDouble();
+            foreach (string name in new[] { "Apparent Load (VA)", "Connected Load (VA)" })
+            {
+                p = system.LookupParameter(name);
+                if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                    !double.IsInfinity(p.AsDouble()) && p.AsDouble() >= 0) return p.AsDouble();
+            }
+            return null;
+        }
         private static double? ReadCapacityVa(Element panel)
         {
             string[] names = { "Panel Capacity (VA)", "Maximum Apparent Load (VA)", "Connected Load Capacity (VA)", "Panel Capacity (kVA)" };
