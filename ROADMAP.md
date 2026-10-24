@@ -1,97 +1,78 @@
-# Roadmap: coverage of the requested feature list
+# ElecKit Feature Gap and Delivery Roadmap
 
-All 42 requested functions are mapped below to a tool in this add-in. Names on the ribbon are my own;
-the behaviour follows the description you gave. Two extra tools (Circuit Report, Select by Circuit)
-bring the total to 44. Status: [x] built, [ ] planned.
+## Purpose
 
-## Drafting (10)
-| # | Requested function | Tool here | Status |
+ElecKit is the focused, public electrical productivity add-in targeting Revit 2020 / .NET Framework 4.7. ElecTool is the broader private reference suite targeting .NET Framework 4.8 with a Revit 2020 API package baseline. The projects are related, but they are **not feature-equivalent**. This file tracks the practical gaps without claiming that a command is production-ready merely because a class or ribbon button exists.
+
+## Current ElecKit baseline
+
+The main branch contains 22 command classes:
+
+| Area | Implemented commands |
+|---|---|
+| Drafting | CAD to Detail Lines; Wires to Detail Lines; Detail Lines to Wires; Connect Runs; Lines to Conduit; Fillet Radius; Fillet Two Lines; Fillet Corners; Split Lines; Clean Lines |
+| Wiring | Home Run Lines; Boundary to Conduits; Circuit Number Text; Wire Info to Comments; Cable Catalog |
+| Model and selection | Select Hosts; Select Same Type; 3D from Selection |
+| Schedules | Export All Schedules; Export Active Schedule |
+| Circuits | Circuit Report; Select by Circuit |
+
+**Status definition:** “Implemented” means a command is present in the current source tree. It does not, by itself, prove a clean build, safe behavior in every model, or successful testing inside Revit. Revit integration testing remains a release gate.
+
+## Gap matrix against ElecTool
+
+The following capabilities exist as named commands or command groups in ElecTool but are not currently represented by a dedicated equivalent in ElecKit. Before porting, inspect each source workflow, identify its actual behavior and dependencies, then implement and test it against ElecKit's Revit 2020 / net47 constraints.
+
+| Priority | Gap | ElecTool reference | Acceptance criteria for ElecKit |
 |---|---|---|---|
-| 1 | Convert Lines: detail/model lines into conduits | Lines to Conduit | [x] |
-| 2 | Connect: join selected elements with conduit runs | Connect Runs | [x] |
-| 3 | Overkill: remove duplicate/overlapping curves | Clean Lines | [x] (detail lines) |
-| 4 | CAD to Detail: imported CAD lines into detail lines | CAD to Detail Lines | [x] |
-| 5 | Wire to Detail: wires into detail lines | Wires to Detail Lines | [x] |
-| 6 | Detail to Wire: detail lines into chamfered wires | Detail Lines to Wires | [x] |
-| 7 | Fillet Lines: fillet at corners | Fillet Corners | [x] |
-| 8 | Fillet Radius: default radius for fillet tools | Fillet Radius Setting | [x] |
-| 9 | Fillet Pick: fillet two picked lines | Fillet Two Lines | [x] |
-| 10 | Line Cutter: cut/split lines at intersections | Split Lines | [x] |
+| P0 | Clean Lines safety | `OverkillCommand.cs` | Remove only exact duplicates or shorter collinear segments fully contained by a retained segment. Preserve partial overlaps and disjoint collinear segments. |
+| P1 | Clash detection | `ClashDetectionCommand.cs`, `NewToolsCoordination.cs` | User-selectable categories, explicit tolerance, deterministic pair results, element IDs and a review/export report. Avoid presenting bounding-box intersections as confirmed geometric clashes. |
+| P1 | Quantity takeoff | `QuantityTakeoffCommand.cs`, `NewToolsQA.cs` | Category/filter selection, correct internal-unit conversion, grouped totals, and CSV output with clear units. |
+| P1 | Schedule round-trip | `ScheduleDynamicExportCommand.cs`, `ScheduleDynamicImportCommand.cs`, `ImportExcelAsScheduleCommand.cs` | Export a stable key, validate imported headers and types, preview changes, detect duplicate/missing keys, and make updates transaction-safe. |
+| P1 | Circuit and panel tools | `NewToolsCircuits.cs`, `AssignCircuitNumberCommand.cs`, `PanelSLDCommand.cs` | Validate circuit/panel relationships; report skipped items; never silently change circuit assignments. |
+| P1 | Conduit and cable-tray workflows | `NewToolsConduit.cs`, `NewToolsTray.cs`, `CableConduitCommand.cs`, `CableTrayCommand.cs`, `DrawCableTrayCommand.cs` | Validate routing inputs, sizes and fittings; report failed segments; preserve user control of type and level. |
+| P2 | Workset assignment | `AssignToTypeWorksetCommand.cs` | Preview affected elements, require a valid workshared document and target workset, and report per-element failures. |
+| P2 | Smart filtering | `SmartFilterCommand.cs` | Filter by category, type and parameter; show the match count; offer select/isolate without modifying model data. |
+| P2 | Parameter management | `SharedParamsCommand.cs` | Validate shared-parameter definitions and bindings; preserve existing bindings; explain conflicts before applying changes. |
+| P2 | Family type manager | `FamilyTypeManagerCommand.cs` | Show available types, validate type compatibility, and report elements that could not be changed. |
+| P2 | Junction-box placement and alignment | `AddJunctionBoxCommand.cs`, `AlignToFamilyCommand.cs`, `ConnectToElementCommand.cs` | Validate host/connector compatibility, use explicit pick prompts, and roll back cleanly on failure. |
+| P2 | Annotation tools | `SwitchLabelCommand.cs`, `LeaderToolsPaletteCommand.cs`, `DimProCommand.cs`, `DistributeElementsCommand.cs` | Respect view plane and element geometry; provide clear selection prompts and preserve existing annotations. |
+| P2 | View and sheet productivity | `ViewManagerCommand.cs`, `AlignedSectionCommand.cs`, `ElecToolSheetGenCommand.cs`, `View3DBoxCommand.cs` | Create valid views/sheets with unique names, predictable crop/section extents, and no duplicate or orphaned views. |
+| P3 | Cable-tray and conduit reporting | `ElecToolExporterCommand.cs`, `CableConduitCommand.cs` | Produce auditable totals, explicit units, stable columns and useful empty-result messages. |
+| P3 | Family/type selection and view utilities | `FamilyTypeManagerCommand.cs`, `MatchTypeSelectCommand.cs`, `ViewManagerCommand.cs` | Make selection scope and active-view behavior explicit; do not change model data unexpectedly. |
+| P3 | Settings and support commands | `SettingsCommand.cs`, `CheckForUpdateCommand.cs`, `ContactUsCommand.cs` | Keep settings local and validated. Do not add a network updater or external endpoint until hosting, security and support ownership are defined. |
 
-## Wiring (5)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 11 | Home Run: home-run detail lines, devices to panels | Home Run Lines | [x] |
-| 12 | Wiring Pro: conduits from a boundary of detail lines | Boundary to Conduits | [x] |
-| 13 | Circuit Number: circuit number text on fixtures/equipment | Circuit Number Text | [x] |
-| 14 | Write Wire Info: nearby circuit info into conduit comments | Wire Info to Comments | [x] |
-| 15 | Edit Catalog: review/edit the cable catalog | Cable Catalog Editor | [x] |
+Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table is a **feature-level gap list**, not a one-class-to-one-class porting plan. Confirm the actual registered ribbon controls and behavior before marking any row complete.
 
-## Annotation (4)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 16 | Switch Label: label text on lighting devices | Switch Labels | [ ] |
-| 17 | Tag & Leader: independent tags with leaders | Tags with Leaders | [ ] |
-| 18 | Dim Pro: aligned dimension between two elements | Aligned Dimension | [ ] |
-| 19 | Distribute: even spacing along a path | Distribute Along Path | [ ] |
+## Reliability and release gaps
 
-## Model (7)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 20 | Assign Workset: by type | Worksets by Type | [ ] |
-| 21 | Show Hosts: highlight host elements | Select Hosts | [x] |
-| 22 | Junction Box: place at a picked point | Place Junction Box | [ ] |
-| 23 | Align Family: location and rotation to a reference | Align to Reference | [ ] |
-| 24 | Section: aligned to a linear element | Section Along Element | [ ] |
-| 25 | Match Type: select all instances of a picked type | Select Same Type | [x] |
-| 26 | 3D View: cropped to selection bounding box | 3D from Selection | [x] |
+- [x] Clean Lines: restrict deletion to duplicate or fully contained finite segments; partial overlaps and disjoint collinear segments must remain.
+- [ ] Build verification: require a successful CI build for every change and retain the build log/artifact.
+- [ ] Runtime verification: test commands inside Revit 2020 with a disposable model before calling them production-ready.
+- [ ] Transaction consistency: audit conversion and creation commands for clear rollback behavior and partial-success reporting.
+- [ ] Ribbon startup: handle only the known “tab already exists” condition; surface unrelated startup failures instead of silently swallowing them.
+- [ ] Deployment: avoid silently reporting a successful Debug build when copying the add-in or manifest into the user's Revit Addins directory failed.
+- [ ] Automated tests: add testable pure logic for geometry, filtering, CSV parsing, parameter mapping and unit conversions where practical.
+- [ ] Documentation: maintain a command inventory and clearly distinguish source-present, CI-build-passing and Revit-runtime-tested states.
+- [ ] Remove or archive `fix-revit2020-compile.patch` once its changes are confirmed to be incorporated and no longer needed.
 
-## Analysis (4)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 27 | Clash Detect: between categories/elements | Clash Check | [ ] |
-| 28 | Qty Takeoff: selected elements/categories | Quantity Takeoff | [ ] |
-| 29 | Exporter: all schedules to CSV files | Export All Schedules | [x] |
-| 30 | Smart Filter: filter/isolate by category, type, parameter | Smart Filter | [ ] |
+## Recommended implementation order
 
-## Schedules (4)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 31 | Export Schedules: Excel / CSV | Export Schedules to Excel | [ ] (CSV covered by #29) |
-| 32 | Dynamic Export: active schedule to one CSV | Export Active Schedule | [x] |
-| 33 | Import Back: CSV values onto elements, matched by Mark | Import Values by Mark | [ ] |
-| 34 | Import Schedules: CSV as formatted text note | CSV to Text Note | [ ] |
+1. Fix and regression-test data-loss risks before adding more commands.
+2. Stabilize transaction handling, startup diagnostics and deployment feedback.
+3. Add a safe schedule export/import workflow with preview and key validation.
+4. Add quantity takeoff and CSV reporting.
+5. Add smart selection/filtering and workset assignment.
+6. Add clash review and coordination reporting.
+7. Add panel/circuit and conduit/tray tools.
+8. Add annotation, view/sheet, parameter and family management tools.
+9. Update the command inventory only after each feature has passed CI and a documented Revit test.
 
-## Panels and SLD (3)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 35 | View Manager: list printable views, activate one | View Manager | [ ] |
-| 36 | Sheet Creator: new sheet with active view | Sheet Creator | [ ] |
-| 37 | Panel SLD: single-line report for a panel | Panel Single-Line Report | [ ] |
+## Definition of done for every new command
 
-## Cable and Tray (3)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 38 | Cable & CB: conduit sizes, lengths, comments | Conduit Run Report | [ ] |
-| 39 | Cable Tray Section: summary in a drafting view | Tray Summary View | [ ] |
-| 40 | Draw Cable Tray: between two picked points | Draw Cable Tray | [ ] |
-
-## Data (2)
-| # | Requested function | Tool here | Status |
-|---|---|---|---|
-| 41 | Shared Params: create and bind electrical parameters | Shared Parameters | [ ] |
-| 42 | Family Manager: list types, switch type of an instance | Family Type Manager | [ ] |
-
-## Extras (2)
-| # | Tool | Status |
-|---|---|---|
-| 43 | Circuit Report (CSV of all circuits) | [x] |
-| 44 | Select by Circuit | [x] |
-
-Not included: the server-based "Update" and "Contact Us" commands. This add-in has no update server and no licensing.
-
-## Suggested build order
-1. Drafting: complete (v3 and v4)
-2. Model and annotation: Align to Reference, Place Junction Box, Distribute, Aligned Dimension, Tags with Leaders
-3. Wiring: complete (v5)
-4. Schedules, panels, tray, data, analysis: the rest
+- Compiles against the declared Revit 2020 API / .NET Framework 4.7 target.
+- Has explicit selection/input validation and useful cancellation behavior.
+- Uses a transaction strategy appropriate to the operation; failures roll back or are reported accurately.
+- Does not silently skip invalid elements or overwrite user data without a clear rule.
+- Handles internal units and user-facing units correctly.
+- Has a short manual test checklist and evidence of the result in Revit.
+- Is reflected in the README and this roadmap with an honest status.
