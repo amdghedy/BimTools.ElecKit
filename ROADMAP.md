@@ -50,7 +50,7 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - [ ] Runtime verification: test commands inside Revit 2020 with a disposable model before calling them production-ready.
 - [ ] Transaction consistency: audit conversion and creation commands for clear rollback behavior and partial-success reporting.
 - [ ] Ribbon startup: handle only the known “tab already exists” condition; surface unrelated startup failures instead of silently swallowing them.
-- [ ] Deployment: avoid silently reporting a successful Debug build when copying the add-in or manifest into the user's Revit Addins directory failed.
+- [x] Deployment: Debug copy failures are no longer suppressed by `ContinueOnError`; the latest project-file change is awaiting CI verification.
 - [ ] Automated tests: add testable pure logic for geometry, filtering, CSV parsing, parameter mapping and unit conversions where practical.
 - [ ] Documentation: maintain a command inventory and clearly distinguish source-present, CI-build-passing and Revit-runtime-tested states.
 - [ ] Remove or archive `fix-revit2020-compile.patch` once its changes are confirmed to be incorporated and no longer needed.
