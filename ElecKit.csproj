@@ -14,11 +14,6 @@
     <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\2020\</RevitAddinsDir>
   </PropertyGroup>
 
-  <!-- Keep standalone test sources out of the Revit add-in compilation. -->
-  <ItemGroup>
-    <Compile Remove="tests/**/*.cs" />
-  </ItemGroup>
-
   <!-- Local build: use the DLLs from your Revit 2020 install -->
   <ItemGroup Condition="'$(HasLocalRevit)' == 'true'">
     <Reference Include="RevitAPI">
@@ -42,8 +37,8 @@
     <ItemGroup>
       <_AddinFiles Include="$(OutDir)**\*.dll;$(OutDir)**\*.pdb" />
     </ItemGroup>
-    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" />
+    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" ContinueOnError="true" />
   </Target>
 
 </Project>

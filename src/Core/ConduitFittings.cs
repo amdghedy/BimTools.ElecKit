@@ -9,7 +9,7 @@ namespace ElecKit.Core
     public static class ConduitFittings
     {
         /// <summary>Joins two conduits that meet at a corner with an elbow. Straight-through joints are skipped.</summary>
-        public static ElbowResult TryElbow(Document doc, Conduit first, Conduit second, XYZ corner)
+        public static ElbowResult TryElbow(Document doc, MEPCurve first, MEPCurve second, XYZ corner)
         {
             var lineA = ((LocationCurve)first.Location).Curve as Line;
             var lineB = ((LocationCurve)second.Location).Curve as Line;
@@ -32,11 +32,11 @@ namespace ElecKit.Core
             }
         }
 
-        public static Connector Nearest(Conduit conduit, XYZ point)
+        public static Connector Nearest(MEPCurve curve, XYZ point)
         {
             Connector best = null;
             double bestDistance = double.MaxValue;
-            foreach (Connector connector in conduit.ConnectorManager.Connectors)
+            foreach (Connector connector in curve.ConnectorManager.Connectors)
             {
                 double distance = connector.Origin.DistanceTo(point);
                 if (distance < bestDistance)

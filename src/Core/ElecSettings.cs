@@ -17,6 +17,13 @@ namespace ElecKit.Core
         [DataMember] public string LastWireType { get; set; }
         [DataMember] public string LastCircuitParam { get; set; }
         [DataMember] public double? NearbyMm { get; set; }
+        [DataMember] public string LastLabelParam { get; set; }
+        [DataMember] public double? TagOffsetMm { get; set; }
+        [DataMember] public string LastJunctionBoxType { get; set; }
+        [DataMember] public double? JunctionBoxOffsetMm { get; set; }
+        [DataMember] public string LastTrayType { get; set; }
+        [DataMember] public double? TrayOffsetMm { get; set; }
+        [DataMember] public string TraySize { get; set; }
 
         /// <summary>Fillet radius in mm; 150 mm until the user sets one.</summary>
         public double EffectiveFilletRadiusMm

@@ -4,113 +4,114 @@ using System.Linq;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Selection;
 using ElecKit.Core;
 
 namespace ElecKit.Commands
 {
+    /// <summary>
+    /// Finds elements in the active view by category, type name and a parameter value,
+    /// then selects them and optionally isolates them (temporary isolate).
+    /// </summary>
     [Transaction(TransactionMode.Manual)]
     public class SmartFilterCommand : ElecCommand
     {
         protected override Result Run(ToolContext ctx, ref string message)
         {
-            Reference reference;
-            try { reference = ctx.UiDoc.Selection.PickObject(ObjectType.Element, "Pick a reference element to filter the active view"); }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
-
-            Element source = ctx.Doc.GetElement(reference);
-            if (source == null || source.Category == null)
-            { TaskDialog.Show("Smart Filter", "The picked element has no category."); return Result.Cancelled; }
-
-            var choice = new TaskDialog("Smart Filter");
-            choice.MainInstruction = "Choose the matching rule";
-            choice.MainContent = "Scope: active view only. This command selects elements and does not modify the model.";
-            choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Same type as picked element");
-            choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Same category as picked element");
-            choice.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Same parameter value");
-            choice.CommonButtons = TaskDialogCommonButtons.Cancel;
-            TaskDialogResult result = choice.Show();
-            if (result == TaskDialogResult.Cancel) return Result.Cancelled;
-
-            bool byType = result == TaskDialogResult.CommandLink1;
-            bool byParameter = result == TaskDialogResult.CommandLink3;
-            ElementId typeId = source.GetTypeId();
-            int categoryId = source.Category.Id.IntegerValue;
-            string parameterName = null, parameterValue = null;
-            Parameter sourceParameter = null;
-            if (byParameter)
+            View view = ctx.Doc.ActiveView;
+            if (view is ViewSchedule)
             {
-                parameterName = Dialogs.Ask("Smart Filter", "Enter the exact parameter name on the picked element:", "Mark");
-                if (string.IsNullOrWhiteSpace(parameterName)) return Result.Cancelled;
-                sourceParameter = source.LookupParameter(parameterName.Trim());
-                if (sourceParameter == null)
-                { TaskDialog.Show("Smart Filter", "The picked element does not contain a parameter named \"" + parameterName + "\"."); return Result.Cancelled; }
-                parameterValue = ParameterText(sourceParameter);
-                parameterValue = Dialogs.Ask("Smart Filter", "Enter the exact displayed value to match for parameter \"" + parameterName + "\".\nUse an empty value to match blank string parameters.", parameterValue);
-                if (parameterValue == null) return Result.Cancelled;
+                TaskDialog.Show("Smart Filter", "Open a plan, section or 3D view first.");
+                return Result.Cancelled;
             }
-            var ids = new List<ElementId>();
-            foreach (Element candidate in new FilteredElementCollector(ctx.Doc, ctx.Doc.ActiveView.Id).WhereElementIsNotElementType())
+
+            List<Element> all = new FilteredElementCollector(ctx.Doc, view.Id)
+                .WhereElementIsNotElementType()
+                .Where(e => e.Category != null && e.Category.CategoryType == CategoryType.Model)
+                .ToList();
+            if (all.Count == 0)
             {
-                if (candidate.Category == null) continue;
-                bool match;
-                if (byParameter)
+                TaskDialog.Show("Smart Filter", "There are no model elements in this view.");
+                return Result.Cancelled;
+            }
+
+            var groups = all.GroupBy(e => e.Category.Name).OrderBy(g => g.Key).ToList();
+            var names = new List<string> { "(all categories)" };
+            names.AddRange(groups.Select(g => g.Key + " (" + g.Count() + ")"));
+
+            int categoryIndex = ListPicker.Pick("Smart Filter", "Category:", names);
+            if (categoryIndex < 0) return Result.Cancelled;
+
+            List<Element> pool = categoryIndex == 0 ? all : groups[categoryIndex - 1].ToList();
+
+            string typeText = Dialogs.Ask("Smart Filter", "Family or type name contains (leave empty for any):", "");
+            if (typeText == null) return Result.Cancelled;
+            typeText = typeText.Trim();
+
+            string paramText = Dialogs.Ask("Smart Filter",
+                "Parameter filter as Name=Value, matched as \"contains\" (leave empty for none). Example: Mark=A1",
+                "");
+            if (paramText == null) return Result.Cancelled;
+            paramText = paramText.Trim();
+
+            string paramName = null, paramValue = null;
+            if (paramText.Length > 0)
+            {
+                int equals = paramText.IndexOf('=');
+                if (equals <= 0)
                 {
-                    Parameter candidateParameter = candidate.LookupParameter(parameterName);
-                    match = candidateParameter != null && candidateParameter.StorageType == sourceParameter.StorageType &&
-                        string.Equals(ParameterText(candidateParameter), parameterValue, StringComparison.OrdinalIgnoreCase);
+                    TaskDialog.Show("Smart Filter", "Use the form Name=Value, for example Mark=A1.");
+                    return Result.Cancelled;
                 }
-                else if (byType) match = candidate.GetTypeId() == typeId;
-                else match = candidate.Category.Id.IntegerValue == categoryId;
-                if (match) ids.Add(candidate.Id);
+                paramName = paramText.Substring(0, equals).Trim();
+                paramValue = paramText.Substring(equals + 1).Trim();
             }
 
-            if (ids.Count == 0)
-            { TaskDialog.Show("Smart Filter", "No matching elements were found in the active view."); return Result.Succeeded; }
-            ctx.UiDoc.Selection.SetElementIds(ids);
+            var matches = new List<ElementId>();
+            foreach (Element element in pool)
+            {
+                if (typeText.Length > 0)
+                {
+                    var type = ctx.Doc.GetElement(element.GetTypeId()) as ElementType;
+                    string label = type != null ? type.FamilyName + " " + type.Name : element.Name;
+                    if (label.IndexOf(typeText, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                }
+                if (paramName != null)
+                {
+                    string value = ValueOf(ctx.Doc, element, paramName);
+                    if (value == null || value.IndexOf(paramValue, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                }
+                matches.Add(element.Id);
+            }
 
-            var action = new TaskDialog("Smart Filter");
-            action.MainInstruction = ids.Count + " matching element(s) found.";
-            action.MainContent = "Choose whether to keep the selection only or temporarily isolate the matches in this view.";
-            action.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Select matches only");
-            action.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Temporarily isolate matches");
-            action.CommonButtons = TaskDialogCommonButtons.Cancel;
-            TaskDialogResult actionResult = action.Show();
-            if (actionResult == TaskDialogResult.CommandLink2)
+            if (matches.Count == 0)
             {
-                try
-                {
-                    ctx.Transact("Temporarily isolate Smart Filter matches", delegate
-                    {
-                        ctx.Doc.ActiveView.IsolateElementsTemporary(ids);
-                    });
-                    TaskDialog.Show("Smart Filter", ids.Count + " element(s) isolated temporarily in the active view. Use Revit's Reset Temporary Hide/Isolate control to restore the view.");
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex);
-                    TaskDialog.Show("Smart Filter", "Temporary isolation failed. The matching elements remain selected.\\n" + ex.Message);
-                }
+                TaskDialog.Show("Smart Filter", "Nothing matches that filter in this view.");
+                return Result.Cancelled;
             }
-            else if (actionResult == TaskDialogResult.CommandLink1)
+
+            int action = Dialogs.Choose("Smart Filter", matches.Count + " element(s) match. What now?", new List<string>
             {
-                TaskDialog.Show("Smart Filter", ids.Count + " element(s) selected in the active view.");
-            }
-            else return Result.Cancelled;
+                "Select them",
+                "Select them and isolate them in this view (temporary)"
+            }, 0);
+            if (action < 0) return Result.Cancelled;
+
+            ctx.UiDoc.Selection.SetElementIds(matches);
+            if (action == 1)
+                ctx.Transact("Smart filter isolate", () => view.IsolateElementsTemporary(matches));
             return Result.Succeeded;
         }
 
-        private static string ParameterText(Parameter parameter)
+        private static string ValueOf(Document doc, Element element, string name)
         {
-            if (parameter == null) return "";
-            switch (parameter.StorageType)
+            Parameter p = element.LookupParameter(name);
+            if (p == null)
             {
-                case StorageType.String: return parameter.AsString() ?? "";
-                case StorageType.Integer: return parameter.AsValueString() ?? parameter.AsInteger().ToString(System.Globalization.CultureInfo.InvariantCulture);
-                case StorageType.Double: return parameter.AsValueString() ?? "";
-                case StorageType.ElementId: return parameter.AsValueString() ?? parameter.AsElementId().IntegerValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                default: return "";
+                Element type = doc.GetElement(element.GetTypeId());
+                if (type != null) p = type.LookupParameter(name);
             }
+            if (p == null) return null;
+            return p.StorageType == StorageType.String ? p.AsString() : p.AsValueString();
         }
     }
 }
