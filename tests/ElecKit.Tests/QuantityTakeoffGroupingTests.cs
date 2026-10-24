@@ -43,6 +43,50 @@ namespace ElecKit.Tests
             Assert.Equal(2, rows.Count);
         }
 
+        [Theory]
+        [InlineData("Electrical Equipment")]
+        [InlineData("Electrical Fixtures")]
+        [InlineData("Lighting Fixtures")]
+        [InlineData("Lighting Devices")]
+        [InlineData("Conduit")]
+        [InlineData("Conduit Fittings")]
+        [InlineData("Cable Tray")]
+        [InlineData("Cable Tray Fittings")]
+        [InlineData("Wires")]
+        [InlineData("Data Devices")]
+        [InlineData("Telephone Devices")]
+        [InlineData("Security Devices")]
+        [InlineData("Fire Alarm Devices")]
+        [InlineData("Communication Devices")]
+        [InlineData("Mechanical Equipment")]
+        [InlineData("Ducts")]
+        [InlineData("Duct Fittings")]
+        [InlineData("Pipes")]
+        [InlineData("Pipe Fittings")]
+        public void KeepsEachSupportedCategoryInItsOwnGroup(string category)
+        {
+            var rows = QuantityTakeoffGrouping.Group(new[] {
+                Item(category, "Family", "Type", "Level", 12.5),
+                Item(category, "Family", "Type", "Level", 7.5)
+            });
+            var row = Assert.Single(rows);
+            Assert.Equal(category, row.Category);
+            Assert.Equal(2, row.Quantity);
+            Assert.Equal(20.0, row.LengthMm, 8);
+        }
+
+        [Fact]
+        public void KeepsDifferentCategoriesSeparateEvenWhenOtherLabelsMatch()
+        {
+            var rows = QuantityTakeoffGrouping.Group(new[] {
+                Item("Conduit", "Family", "Type", "Level", 100),
+                Item("Cable Tray", "Family", "Type", "Level", 200),
+                Item("Pipe", "Family", "Type", "Level", 300)
+            });
+            Assert.Equal(3, rows.Count);
+            Assert.Equal(600.0, System.Linq.Enumerable.Sum(rows, row => row.LengthMm), 8);
+        }
+
         [Fact]
         public void RejectsNonFiniteLengths()
         {
