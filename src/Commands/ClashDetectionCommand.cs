@@ -64,7 +64,7 @@ namespace ElecKit.Commands
 
             var filterDialog = new TaskDialog("Clash Review");
             filterDialog.MainInstruction = "Choose the category scope for clash screening.";
-            filterDialog.MainContent = "The report identifies bounding-box overlap candidates and checks solid intersections where possible. It does not calculate clearance distances.";
+            filterDialog.MainContent = "The report identifies bounding-box overlap candidates, checks solid intersections where possible, and can screen bounding-box separation below a threshold.";
             filterDialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "MEP systems only",
                 "Electrical, conduit, cable tray, duct and pipe categories.");
             filterDialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "MEP + architecture / structure",
@@ -73,6 +73,22 @@ namespace ElecKit.Commands
             TaskDialogResult filterChoice = filterDialog.Show();
             if (filterChoice != TaskDialogResult.CommandLink1 && filterChoice != TaskDialogResult.CommandLink2)
                 return Result.Cancelled;
+
+            string clearanceText = Dialogs.Ask("Clash Review", "Optional bounding-box clearance threshold in millimetres. Enter 0 to report overlaps only:", "0");
+            if (clearanceText == null) return Result.Cancelled;
+            double clearanceMm;
+            if (!double.TryParse(clearanceText, NumberStyles.Float, CultureInfo.CurrentCulture, out clearanceMm) &&
+                !double.TryParse(clearanceText, NumberStyles.Float, CultureInfo.InvariantCulture, out clearanceMm))
+            {
+                TaskDialog.Show("Clash Review", "Enter a valid numeric clearance in millimetres.");
+                return Result.Cancelled;
+            }
+            if (double.IsNaN(clearanceMm) || double.IsInfinity(clearanceMm) || clearanceMm < 0)
+            {
+                TaskDialog.Show("Clash Review", "Clearance must be a finite, non-negative number.");
+                return Result.Cancelled;
+            }
+            double clearanceFeet = LengthUnits.MillimetresToFeet(clearanceMm);
 
             BuiltInCategory[] selectedCategories = filterChoice == TaskDialogResult.CommandLink1
                 ? MepCategories
