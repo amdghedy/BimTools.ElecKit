@@ -81,7 +81,7 @@ namespace ElecKit.Commands
                     return Result.Cancelled;
                 }
                 if (parameterId == null || parameterId == ElementId.InvalidElementId ||
-                    !seenParameterIds.Add(parameterId.IntegerValue))
+                    !seenParameterIds.Add((int)parameterId.IntegerValue))
                 {
                     TaskDialog.Show("Export Schedule Round-Trip",
                         "The schedule contains an invalid or repeated parameter field ('" + field.GetName() +
@@ -90,7 +90,7 @@ namespace ElecKit.Commands
                 }
                 columns.Add(new Column
                 {
-                    ParameterId = parameterId.IntegerValue,
+                    ParameterId = (int)parameterId.IntegerValue,
                     Name = field.GetName(),
                     IsTypeParameter = fieldType == ScheduleFieldType.ElementType
                 });
