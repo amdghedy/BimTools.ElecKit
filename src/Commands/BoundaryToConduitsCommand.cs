@@ -103,7 +103,6 @@ namespace ElecKit.Commands
                             runs++;
                             conduits += made.Count;
                             elbows += runElbows;
-                            elbowsFailed += runElbowsFailed;
                         }
                         catch (Exception ex)
                         {
