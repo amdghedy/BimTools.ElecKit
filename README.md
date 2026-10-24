@@ -16,7 +16,7 @@ ElecKit brings common electrical drafting, wiring, model-selection, schedule-dat
   <a href="https://github.com/amdghedy/BimTools.ElecKit/blob/feature/native-gap-closure-2026/LICENSE"><img src="https://img.shields.io/badge/License-see%20repository-lightgrey" alt="License"></a>
 </p>
 
-> **Development status:** Active development. GitHub Actions builds version-specific packages and runs Revit-independent tests. A successful compile is not a substitute for testing the commands in each supported Revit installation. Treat the current multi-version build and installer as release candidates until all CI jobs pass and the live-model checklist is completed.
+> **Development status:** Active development. In workflow run [#65](https://github.com/amdghedy/BimTools.ElecKit/actions/runs/40128639458), all eight version-specific builds (Revit 2020–2027) and the Revit-independent test job passed. The installer job failed because the workflow could not locate `ISCC.exe` at its hard-coded path, so `ElecKit-Setup-EXE` was not published by that run. A successful compile is not a substitute for testing the commands inside each supported Revit installation.
 
 ## Quick links
 
@@ -77,7 +77,7 @@ Each Revit version must use its own build against the matching Revit API. **Do n
 5. Run the setup and select only the Revit versions installed on your computer.
 6. Restart Revit and look for the **ElecKit** ribbon tab.
 
-The installer is a CI artifact, not a guaranteed permanent download. If `ElecKit-Setup-EXE` is absent, the installer job did not publish it successfully; use the version-specific artifacts below instead.
+**Current status:** the latest checked run passed all eight Revit build jobs and the automated test job, but failed during installer compilation because the workflow expected `C:\Program Files\Inno Setup 6\ISCC.exe` and did not find it. Therefore, the setup EXE is not available from that run. Use the version-specific artifacts below until the installer workflow is fixed. Check the [latest run](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build-all-versions.yml) before downloading.
 
 ### Option B — version-specific package
 
@@ -134,7 +134,7 @@ Replace `2020` with the Revit version you intend to target. The framework and Re
 
 ### Build and test in GitHub Actions
 
-The workflow is defined in [`.github/workflows/build-all-versions.yml`](.github/workflows/build-all-versions.yml). It creates a matrix for Revit 2020–2027, runs the Revit-independent tests, stages version-specific packages, and attempts to build the selectable-version setup EXE.
+The workflow is defined in [`.github/workflows/build-all-versions.yml`](.github/workflows/build-all-versions.yml). It creates a matrix for Revit 2020–2027, runs the Revit-independent tests, stages version-specific packages, and then attempts to build the selectable-version setup EXE. In the latest checked run, all eight version builds and tests passed; only installer compilation failed because the script's hard-coded `ISCC.exe` path did not match the runner's installation location.
 
 [**Open workflow runs →**](https://github.com/amdghedy/BimTools.ElecKit/actions/workflows/build-all-versions.yml)
 
