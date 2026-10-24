@@ -6,7 +6,7 @@ ElecKit is the focused, public electrical productivity add-in targeting Revit 20
 
 ## Current ElecKit baseline
 
-The main branch contains 22 command classes:
+The main branch contains 24 command classes:
 
 | Area | Implemented commands |
 |---|---|
@@ -27,7 +27,7 @@ The following capabilities exist as named commands or command groups in ElecTool
 | P0 | Clean Lines safety | `OverkillCommand.cs` | Remove only exact duplicates or shorter collinear segments fully contained by a retained segment. Preserve partial overlaps and disjoint collinear segments. |
 | P1 | Clash detection | `ClashDetectionCommand.cs`, `NewToolsCoordination.cs` | User-selectable categories, explicit tolerance, deterministic pair results, element IDs and a review/export report. Avoid presenting bounding-box intersections as confirmed geometric clashes. |
 | P1 | Quantity takeoff | `QuantityTakeoffCommand.cs`, `NewToolsQA.cs` | Category/filter selection, correct internal-unit conversion, grouped totals, and CSV output with clear units. |
-| P1 | Schedule round-trip | `ScheduleDynamicExportCommand.cs`, `ScheduleDynamicImportCommand.cs`, `ImportExcelAsScheduleCommand.cs` | Export a stable key, validate imported headers and types, preview changes, detect duplicate/missing keys, and make updates transaction-safe. |
+| P1 | Schedule round-trip | `ScheduleDynamicExportCommand.cs`, `ScheduleDynamicImportCommand.cs`, `ImportExcelAsScheduleCommand.cs` | **Partially implemented.** `ImportScheduleValuesCommand.cs` imports CSV by ElementId or unique Mark, previews before changes, skips blank cells, uses unit-aware parsing for doubles, and reports failures. A true keyed export/import round-trip still needs a matching export format that supplies stable ElementIds. |
 | P1 | Circuit and panel tools | `NewToolsCircuits.cs`, `AssignCircuitNumberCommand.cs`, `PanelSLDCommand.cs` | Validate circuit/panel relationships; report skipped items; never silently change circuit assignments. |
 | P1 | Conduit and cable-tray workflows | `NewToolsConduit.cs`, `NewToolsTray.cs`, `CableConduitCommand.cs`, `CableTrayCommand.cs`, `DrawCableTrayCommand.cs` | Validate routing inputs, sizes and fittings; report failed segments; preserve user control of type and level. |
 | P2 | Workset assignment | `AssignToTypeWorksetCommand.cs` | Preview affected elements, require a valid workshared document and target workset, and report per-element failures. |
@@ -51,7 +51,7 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 - [ ] Transaction consistency: audit conversion and creation commands for clear rollback behavior and partial-success reporting.
 - [ ] Ribbon startup: handle only the known “tab already exists” condition; surface unrelated startup failures instead of silently swallowing them.
 - [x] Deployment: Debug copy failures are no longer suppressed by `ContinueOnError`; the latest project-file change is awaiting CI verification.
-- [ ] Automated tests: add testable pure logic for geometry, filtering, CSV parsing, parameter mapping and unit conversions where practical.
+- [ ] Automated tests: add testable pure logic for geometry, filtering, CSV parsing, parameter mapping and unit conversions where practical.\n- [ ] Data import validation: reject duplicate parameter headers and verify the import file contains unique row keys before applying changes.\n- [ ] Quantity takeoff: test each supported category and confirm the active view is a valid model view; add regression fixtures for grouped totals and curve-length conversion.
 - [ ] Documentation: maintain a command inventory and clearly distinguish source-present, CI-build-passing and Revit-runtime-tested states.
 - [ ] Remove or archive `fix-revit2020-compile.patch` once its changes are confirmed to be incorporated and no longer needed.
 
