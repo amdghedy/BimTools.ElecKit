@@ -253,6 +253,8 @@ namespace ElecKit.Commands
                     case ScheduleFilterType.NotContains:
                     case ScheduleFilterType.BeginsWith:
                     case ScheduleFilterType.NotBeginsWith:
+                    case ScheduleFilterType.EndsWith:
+                    case ScheduleFilterType.NotEndsWith:
                         if (parameter.StorageType != StorageType.String || !filter.IsStringValue)
                             throw new InvalidOperationException("String filter applied to a non-string parameter: " + field.GetName());
                         string actual = parameter.AsString() ?? string.Empty;
@@ -263,8 +265,12 @@ namespace ElecKit.Commands
                             match = actual.IndexOf(expected, StringComparison.OrdinalIgnoreCase) < 0;
                         else if (filter.FilterType == ScheduleFilterType.BeginsWith)
                             match = actual.StartsWith(expected, StringComparison.OrdinalIgnoreCase);
-                        else
+                        else if (filter.FilterType == ScheduleFilterType.NotBeginsWith)
                             match = !actual.StartsWith(expected, StringComparison.OrdinalIgnoreCase);
+                        else if (filter.FilterType == ScheduleFilterType.EndsWith)
+                            match = actual.EndsWith(expected, StringComparison.OrdinalIgnoreCase);
+                        else
+                            match = !actual.EndsWith(expected, StringComparison.OrdinalIgnoreCase);
                         break;
                     case ScheduleFilterType.GreaterThan:
                     case ScheduleFilterType.GreaterThanOrEqual:
