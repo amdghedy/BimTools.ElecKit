@@ -1,0 +1,530 @@
+diff --git a/src/Commands/BoundaryToConduitsCommand.cs b/src/Commands/BoundaryToConduitsCommand.cs
+index 20dd84b..fc40f0c 100644
+--- a/src/Commands/BoundaryToConduitsCommand.cs
++++ b/src/Commands/BoundaryToConduitsCommand.cs
+@@ -57,7 +57,7 @@ namespace ElecKit.Commands
+             if (!ConduitPrompt.TryAsk(ctx.Doc, "Boundary to Conduits", out type, out offsetMm)) return Result.Cancelled;
+ 
+             Level level = plan.GenLevel;
+-            double z = level.Elevation + Units.MmToFeet(offsetMm);
++            double z = level.Elevation + UnitConv.MmToFeet(offsetMm);
+ 
+             var lines = sources.Select(s => (Line)s.GeometryCurve).ToList();
+             List<List<XYZ>> chains = LineChains.Build(lines, JoinToleranceFeet);
+diff --git a/src/Commands/CircuitNumberTextCommand.cs b/src/Commands/CircuitNumberTextCommand.cs
+index ab46c9d..8822eeb 100644
+--- a/src/Commands/CircuitNumberTextCommand.cs
++++ b/src/Commands/CircuitNumberTextCommand.cs
+@@ -77,8 +77,8 @@ namespace ElecKit.Commands
+                 }
+             }
+ 
+-            Settings.Current.LastCircuitParam = parameterName;
+-            Settings.Current.Save();
++            ElecSettings.Current.LastCircuitParam = parameterName;
++            ElecSettings.Current.Save();
+ 
+             int written = 0, noParameter = 0, noCircuit = 0;
+             ctx.Transact("Circuit number text", () =>
+@@ -127,7 +127,7 @@ namespace ElecKit.Commands
+             }
+             names.Sort(StringComparer.OrdinalIgnoreCase);
+ 
+-            int index = names.IndexOf(Settings.Current.LastCircuitParam ?? "");
++            int index = names.IndexOf(ElecSettings.Current.LastCircuitParam ?? "");
+             if (index < 0)
+             {
+                 Parameter comments = sample.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
+diff --git a/src/Commands/CircuitReportCommand.cs b/src/Commands/CircuitReportCommand.cs
+index 669da1b..2c7e95d 100644
+--- a/src/Commands/CircuitReportCommand.cs
++++ b/src/Commands/CircuitReportCommand.cs
+@@ -41,12 +41,12 @@ namespace ElecKit.Commands
+             }
+ 
+             string file = Path.Combine(
+-                Settings.Current.ResolveReportFolder(),
++                ElecSettings.Current.ResolveReportFolder(),
+                 "CircuitReport_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv");
+             File.WriteAllText(file, sb.ToString(), new UTF8Encoding(true));
+ 
+             TaskDialog.Show("Circuit Report", systems.Count + " circuits exported to:\n" + file);
+-            if (!Settings.Current.DoNotOpenReports) Process.Start(file);
++            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(file);
+             return Result.Succeeded;
+         }
+     }
+diff --git a/src/Commands/ConnectRunsCommand.cs b/src/Commands/ConnectRunsCommand.cs
+index 951153b..6ed3c14 100644
+--- a/src/Commands/ConnectRunsCommand.cs
++++ b/src/Commands/ConnectRunsCommand.cs
+@@ -50,7 +50,7 @@ namespace ElecKit.Commands
+             if (shape < 0) return Result.Cancelled;
+ 
+             Level level = plan.GenLevel;
+-            double z = level.Elevation + Units.MmToFeet(offsetMm);
++            double z = level.Elevation + UnitConv.MmToFeet(offsetMm);
+             var points = new List<XYZ>();
+             foreach (Reference r in picked)
+             {
+diff --git a/src/Commands/DetailToWireCommand.cs b/src/Commands/DetailToWireCommand.cs
+index 5fc8e6a..bba7601 100644
+--- a/src/Commands/DetailToWireCommand.cs
++++ b/src/Commands/DetailToWireCommand.cs
+@@ -64,13 +64,13 @@ namespace ElecKit.Commands
+             int index = 0;
+             if (types.Count > 1)
+             {
+-                int last = types.FindIndex(t => t.Name == Settings.Current.LastWireType);
++                int last = types.FindIndex(t => t.Name == ElecSettings.Current.LastWireType);
+                 index = Dialogs.Choose("Detail Lines to Wires", "Wire type:", types.Select(t => t.Name).ToList(), last);
+                 if (index < 0) return Result.Cancelled;
+             }
+             WireType wireType = types[index];
+-            Settings.Current.LastWireType = wireType.Name;
+-            Settings.Current.Save();
++            ElecSettings.Current.LastWireType = wireType.Name;
++            ElecSettings.Current.Save();
+ 
+             var ask = new TaskDialog("Detail Lines to Wires");
+             ask.MainInstruction = "Delete the source detail lines after converting?";
+@@ -101,7 +101,7 @@ namespace ElecKit.Commands
+ 
+                     try
+                     {
+-                        Wire.Create(ctx.Doc, wireType.Id, view.Id, WiringType.Chamfer, points, null, null);
++                        Wire.Create(ctx.Doc, wireType.Id, view.Id, WiringType.Chamfer, points, (Connector)null, (Connector)null);
+                         created++;
+                     }
+                     catch (Exception ex)
+diff --git a/src/Commands/ExportActiveScheduleCommand.cs b/src/Commands/ExportActiveScheduleCommand.cs
+index e3ac782..2f9ec0b 100644
+--- a/src/Commands/ExportActiveScheduleCommand.cs
++++ b/src/Commands/ExportActiveScheduleCommand.cs
+@@ -20,13 +20,13 @@ namespace ElecKit.Commands
+                 return Result.Cancelled;
+             }
+ 
+-            string folder = Settings.Current.ResolveReportFolder();
++            string folder = ElecSettings.Current.ResolveReportFolder();
+             string fileName = FileNames.Safe(schedule.Name) + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
+             schedule.Export(folder, fileName, ScheduleExport.Options());
+ 
+             string path = Path.Combine(folder, fileName);
+             TaskDialog.Show("Export Active Schedule", "Saved to:\n" + path);
+-            if (!Settings.Current.DoNotOpenReports) Process.Start(path);
++            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(path);
+             return Result.Succeeded;
+         }
+     }
+diff --git a/src/Commands/ExportAllSchedulesCommand.cs b/src/Commands/ExportAllSchedulesCommand.cs
+index ad35f3d..e5114dc 100644
+--- a/src/Commands/ExportAllSchedulesCommand.cs
++++ b/src/Commands/ExportAllSchedulesCommand.cs
+@@ -28,7 +28,7 @@ namespace ElecKit.Commands
+             }
+ 
+             string folder = Path.Combine(
+-                Settings.Current.ResolveReportFolder(),
++                ElecSettings.Current.ResolveReportFolder(),
+                 "Schedules_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+             Directory.CreateDirectory(folder);
+ 
+@@ -52,7 +52,7 @@ namespace ElecKit.Commands
+             if (failed.Count > 0) text += "\n\nSkipped (see log):\n" + string.Join("\n", failed);
+             TaskDialog.Show("Export All Schedules", text);
+ 
+-            if (!Settings.Current.DoNotOpenReports) Process.Start(folder);
++            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(folder);
+             return Result.Succeeded;
+         }
+     }
+diff --git a/src/Commands/FilletCornersCommand.cs b/src/Commands/FilletCornersCommand.cs
+index 07f3ff1..e8bedf9 100644
+--- a/src/Commands/FilletCornersCommand.cs
++++ b/src/Commands/FilletCornersCommand.cs
+@@ -45,7 +45,7 @@ namespace ElecKit.Commands
+                 return Result.Cancelled;
+             }
+ 
+-            double radius = Units.MmToFeet(Settings.Current.EffectiveFilletRadiusMm);
++            double radius = UnitConv.MmToFeet(ElecSettings.Current.EffectiveFilletRadiusMm);
+             var geometry = elements.Select(c => (Line)c.GeometryCurve).ToArray();
+             var usedEnds = new HashSet<string>();
+             var problems = new Dictionary<string, int>();
+@@ -90,7 +90,7 @@ namespace ElecKit.Commands
+                 }
+             });
+ 
+-            string text = made + " corner(s) filleted at " + Units.Format(Settings.Current.EffectiveFilletRadiusMm) + " mm.";
++            string text = made + " corner(s) filleted at " + UnitConv.Format(ElecSettings.Current.EffectiveFilletRadiusMm) + " mm.";
+             if (problems.Count > 0)
+                 text += "\n\nSkipped:\n" + string.Join("\n", problems.Select(p => "- " + p.Key + " (" + p.Value + ")"));
+             TaskDialog.Show("Fillet Corners", text);
+diff --git a/src/Commands/FilletRadiusCommand.cs b/src/Commands/FilletRadiusCommand.cs
+index 89b2792..16b15e0 100644
+--- a/src/Commands/FilletRadiusCommand.cs
++++ b/src/Commands/FilletRadiusCommand.cs
+@@ -12,19 +12,19 @@ namespace ElecKit.Commands
+             string answer = Dialogs.Ask(
+                 "Fillet Radius",
+                 "Default fillet radius in millimetres (used by the fillet tools):",
+-                Units.Format(Settings.Current.EffectiveFilletRadiusMm));
++                UnitConv.Format(ElecSettings.Current.EffectiveFilletRadiusMm));
+             if (answer == null) return Result.Cancelled;
+ 
+             double mm;
+-            if (!Units.TryParseNumber(answer, out mm) || mm <= 0)
++            if (!UnitConv.TryParseNumber(answer, out mm) || mm <= 0)
+             {
+                 TaskDialog.Show("Fillet Radius", "Enter a number greater than zero.");
+                 return Result.Cancelled;
+             }
+ 
+-            Settings.Current.FilletRadiusMm = mm;
+-            Settings.Current.Save();
+-            TaskDialog.Show("Fillet Radius", "Default fillet radius is now " + Units.Format(mm) + " mm.");
++            ElecSettings.Current.FilletRadiusMm = mm;
++            ElecSettings.Current.Save();
++            TaskDialog.Show("Fillet Radius", "Default fillet radius is now " + UnitConv.Format(mm) + " mm.");
+             return Result.Succeeded;
+         }
+     }
+diff --git a/src/Commands/FilletTwoLinesCommand.cs b/src/Commands/FilletTwoLinesCommand.cs
+index a16ff34..c363865 100644
+--- a/src/Commands/FilletTwoLinesCommand.cs
++++ b/src/Commands/FilletTwoLinesCommand.cs
+@@ -19,7 +19,7 @@ namespace ElecKit.Commands
+                 return Result.Cancelled;
+             }
+ 
+-            double radius = Units.MmToFeet(Settings.Current.EffectiveFilletRadiusMm);
++            double radius = UnitConv.MmToFeet(ElecSettings.Current.EffectiveFilletRadiusMm);
+             var filter = new PredicateFilter(e =>
+             {
+                 var curve = e as DetailCurve;
+diff --git a/src/Commands/LinesToConduitCommand.cs b/src/Commands/LinesToConduitCommand.cs
+index 8a5e848..4b8affa 100644
+--- a/src/Commands/LinesToConduitCommand.cs
++++ b/src/Commands/LinesToConduitCommand.cs
+@@ -54,7 +54,7 @@ namespace ElecKit.Commands
+ 
+             var plan = ctx.Doc.ActiveView as ViewPlan;
+             Level planLevel = plan != null ? plan.GenLevel : null;
+-            double offsetFeet = Units.MmToFeet(offsetMm);
++            double offsetFeet = UnitConv.MmToFeet(offsetMm);
+ 
+             int created = 0, arcs = 0, tooShort = 0, needsPlan = 0, failed = 0;
+             var converted = new List<ElementId>();
+diff --git a/src/Commands/SelectByCircuitCommand.cs b/src/Commands/SelectByCircuitCommand.cs
+index 9b6f46d..67c7119 100644
+--- a/src/Commands/SelectByCircuitCommand.cs
++++ b/src/Commands/SelectByCircuitCommand.cs
+@@ -15,29 +15,32 @@ namespace ElecKit.Commands
+         {
+             Reference picked = ctx.UiDoc.Selection.PickObject(
+                 ObjectType.Element, "Pick an element that is on a circuit");
+-
+-            var instance = ctx.Doc.GetElement(picked) as FamilyInstance;
+-            if (instance == null || instance.MEPModel == null)
+-            {
+-                TaskDialog.Show("Select by Circuit", "That element is not an electrical family instance.");
+-                return Result.Cancelled;
+-            }
++            int pickedId = ctx.Doc.GetElement(picked).Id.IntegerValue;
+ 
+             var ids = new List<ElementId>();
+-            var seen = new HashSet<ElementId>();
+-            var systems = instance.MEPModel.GetElectricalSystems();
+-            if (systems != null)
++            var seen = new HashSet<int>();
++            bool onCircuit = false;
++
++            foreach (Element item in new FilteredElementCollector(ctx.Doc).OfClass(typeof(ElectricalSystem)))
+             {
+-                foreach (ElectricalSystem system in systems)
++                var system = item as ElectricalSystem;
++                if (system == null) continue;
++
++                bool contains = false;
++                foreach (Element member in system.Elements)
++                {
++                    if (member.Id.IntegerValue == pickedId) { contains = true; break; }
++                }
++                if (!contains) continue;
++
++                onCircuit = true;
++                foreach (Element member in system.Elements)
+                 {
+-                    foreach (Element e in system.Elements)
+-                    {
+-                        if (seen.Add(e.Id)) ids.Add(e.Id);
+-                    }
++                    if (seen.Add(member.Id.IntegerValue)) ids.Add(member.Id);
+                 }
+             }
+ 
+-            if (ids.Count == 0)
++            if (!onCircuit)
+             {
+                 TaskDialog.Show("Select by Circuit", "That element is not on any circuit.");
+                 return Result.Cancelled;
+diff --git a/src/Commands/WireInfoToCommentsCommand.cs b/src/Commands/WireInfoToCommentsCommand.cs
+index c2d0ccb..58075e5 100644
+--- a/src/Commands/WireInfoToCommentsCommand.cs
++++ b/src/Commands/WireInfoToCommentsCommand.cs
+@@ -59,11 +59,11 @@ namespace ElecKit.Commands
+ 
+             string distanceAnswer = Dialogs.Ask("Wire Info to Comments",
+                 "Look for devices and wires within this distance of each conduit, in millimetres (measured in plan):",
+-                Units.Format(Settings.Current.EffectiveNearbyMm));
++                UnitConv.Format(ElecSettings.Current.EffectiveNearbyMm));
+             if (distanceAnswer == null) return Result.Cancelled;
+ 
+             double distanceMm;
+-            if (!Units.TryParseNumber(distanceAnswer, out distanceMm) || distanceMm <= 0)
++            if (!UnitConv.TryParseNumber(distanceAnswer, out distanceMm) || distanceMm <= 0)
+             {
+                 TaskDialog.Show("Wire Info to Comments", "Enter a number greater than zero, for example 500.");
+                 return Result.Cancelled;
+@@ -73,9 +73,9 @@ namespace ElecKit.Commands
+                 new List<string> { "Replace it", "Append to it" }, 0);
+             if (writeMode < 0) return Result.Cancelled;
+ 
+-            Settings.Current.NearbyMm = distanceMm;
+-            Settings.Current.Save();
+-            double range = Units.MmToFeet(distanceMm);
++            ElecSettings.Current.NearbyMm = distanceMm;
++            ElecSettings.Current.Save();
++            double range = UnitConv.MmToFeet(distanceMm);
+ 
+             List<Candidate> candidates = GatherCandidates(ctx.Doc, view);
+             if (candidates.Count == 0)
+@@ -126,7 +126,7 @@ namespace ElecKit.Commands
+             });
+ 
+             string result = updated + " conduit(s) updated.";
+-            if (noMatch > 0) result += "\n" + noMatch + " conduit(s) had nothing within " + Units.Format(distanceMm) + " mm.";
++            if (noMatch > 0) result += "\n" + noMatch + " conduit(s) had nothing within " + UnitConv.Format(distanceMm) + " mm.";
+             if (readOnly > 0) result += "\n" + readOnly + " conduit(s) have a read-only Comments parameter.";
+             TaskDialog.Show("Wire Info to Comments", result);
+             return Result.Succeeded;
+@@ -149,7 +149,8 @@ namespace ElecKit.Commands
+             foreach (Wire wire in new FilteredElementCollector(doc, view.Id).OfClass(typeof(Wire)).Cast<Wire>())
+             {
+                 string circuit = CircuitInfo.Of(wire);
+-                string wireType = wire.WireType != null ? wire.WireType.Name : null;
++                Element wireTypeElement = doc.GetElement(wire.GetTypeId());
++                string wireType = wireTypeElement != null ? wireTypeElement.Name : null;
+                 if (circuit == null && wireType == null) continue;
+ 
+                 // sample the vertices and the middle of each segment
+diff --git a/src/Core/CableCatalog.cs b/src/Core/CableCatalog.cs
+index 78e727d..7084886 100644
+--- a/src/Core/CableCatalog.cs
++++ b/src/Core/CableCatalog.cs
+@@ -66,7 +66,7 @@ namespace ElecKit.Core
+             {
+                 list.Add(new CableDefinition
+                 {
+-                    Name = "1C x " + Units.Format(sizes[i]) + " mm2",
++                    Name = "1C x " + UnitConv.Format(sizes[i]) + " mm2",
+                     Conductors = 1,
+                     CrossSectionMm2 = sizes[i],
+                     OuterDiameterMm = diameters[i],
+diff --git a/src/Core/CircuitInfo.cs b/src/Core/CircuitInfo.cs
+index 1022eb1..4bf8323 100644
+--- a/src/Core/CircuitInfo.cs
++++ b/src/Core/CircuitInfo.cs
+@@ -1,49 +1,24 @@
+ using System;
+-using System.Collections.Generic;
+ using Autodesk.Revit.DB;
+-using Autodesk.Revit.DB.Electrical;
+ 
+ namespace ElecKit.Core
+ {
+     public static class CircuitInfo
+     {
+         /// <summary>
+-        /// "Panel-Circuit" text for an element (several circuits are joined with a comma),
+-        /// or null if it is on no circuit. Works for family instances and for wires.
++        /// "Panel-Circuit" text for an element, read from its Panel and Circuit Number parameters,
++        /// or null if it is on no circuit. Works for fixtures, equipment and wires.
+         /// </summary>
+         public static string Of(Element element)
+         {
+-            var parts = new List<string>();
++            Parameter panel = element.get_Parameter(BuiltInParameter.RBS_ELEC_CIRCUIT_PANEL_PARAM);
++            Parameter number = element.get_Parameter(BuiltInParameter.RBS_ELEC_CIRCUIT_NUMBER);
+ 
+-            var instance = element as FamilyInstance;
+-            if (instance != null && instance.MEPModel != null)
+-            {
+-                var systems = instance.MEPModel.GetElectricalSystems();
+-                if (systems != null)
+-                {
+-                    foreach (ElectricalSystem system in systems)
+-                        Add(parts, system.PanelName, system.CircuitNumber);
+-                }
+-            }
+-            else
+-            {
+-                Parameter panel = element.get_Parameter(BuiltInParameter.RBS_ELEC_CIRCUIT_PANEL_PARAM);
+-                Parameter number = element.get_Parameter(BuiltInParameter.RBS_ELEC_CIRCUIT_NUMBER);
+-                Add(parts,
+-                    panel != null ? panel.AsString() : null,
+-                    number != null ? number.AsString() : null);
+-            }
++            string panelText = panel != null ? panel.AsString() : null;
++            string numberText = number != null ? number.AsString() : null;
++            if (string.IsNullOrWhiteSpace(numberText)) return null;
+ 
+-            if (parts.Count == 0) return null;
+-            parts.Sort(StringComparer.OrdinalIgnoreCase);
+-            return string.Join(", ", parts);
+-        }
+-
+-        private static void Add(List<string> parts, string panel, string number)
+-        {
+-            if (string.IsNullOrEmpty(number)) return;
+-            string text = string.IsNullOrEmpty(panel) ? number : panel + "-" + number;
+-            if (!parts.Contains(text)) parts.Add(text);
++            return string.IsNullOrWhiteSpace(panelText) ? numberText.Trim() : panelText.Trim() + "-" + numberText.Trim();
+         }
+     }
+ }
+diff --git a/src/Core/ConduitPrompt.cs b/src/Core/ConduitPrompt.cs
+index cf9b811..58b403c 100644
+--- a/src/Core/ConduitPrompt.cs
++++ b/src/Core/ConduitPrompt.cs
+@@ -27,25 +27,25 @@ namespace ElecKit.Core
+             int index = 0;
+             if (types.Count > 1)
+             {
+-                int last = types.FindIndex(t => t.Name == Settings.Current.LastConduitType);
++                int last = types.FindIndex(t => t.Name == ElecSettings.Current.LastConduitType);
+                 index = Dialogs.Choose(title, "Conduit type:", types.Select(t => t.Name).ToList(), last);
+                 if (index < 0) return false;
+             }
+ 
+             string answer = Dialogs.Ask(title, "Conduit height above the level, in millimetres:",
+-                Units.Format(Settings.Current.EffectiveConduitOffsetMm));
++                UnitConv.Format(ElecSettings.Current.EffectiveConduitOffsetMm));
+             if (answer == null) return false;
+ 
+-            if (!Units.TryParseNumber(answer, out offsetMm))
++            if (!UnitConv.TryParseNumber(answer, out offsetMm))
+             {
+                 TaskDialog.Show(title, "Enter a number, for example 2700.");
+                 return false;
+             }
+ 
+             type = types[index];
+-            Settings.Current.LastConduitType = type.Name;
+-            Settings.Current.ConduitOffsetMm = offsetMm;
+-            Settings.Current.Save();
++            ElecSettings.Current.LastConduitType = type.Name;
++            ElecSettings.Current.ConduitOffsetMm = offsetMm;
++            ElecSettings.Current.Save();
+             return true;
+         }
+     }
+diff --git a/src/Core/Settings.cs b/src/Core/ElecSettings.cs
+similarity index 85%
+rename from src/Core/Settings.cs
+rename to src/Core/ElecSettings.cs
+index f072dbd..09ba552 100644
+--- a/src/Core/Settings.cs
++++ b/src/Core/ElecSettings.cs
+@@ -6,7 +6,7 @@ using System.Runtime.Serialization.Json;
+ namespace ElecKit.Core
+ {
+     [DataContract]
+-    public sealed class Settings
++    public sealed class ElecSettings
+     {
+         [DataMember] public string ReportFolder { get; set; }
+         [DataMember] public bool DoNotOpenReports { get; set; }
+@@ -36,9 +36,9 @@ namespace ElecKit.Core
+             get { return NearbyMm.HasValue && NearbyMm.Value > 0 ? NearbyMm.Value : 500.0; }
+         }
+ 
+-        private static Settings _current;
++        private static ElecSettings _current;
+ 
+-        public static Settings Current
++        public static ElecSettings Current
+         {
+             get { return _current ?? (_current = Load()); }
+         }
+@@ -60,28 +60,28 @@ namespace ElecKit.Core
+             return Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+         }
+ 
+-        private static Settings Load()
++        private static ElecSettings Load()
+         {
+             try
+             {
+                 if (File.Exists(FilePath))
+                 {
+                     using (var stream = File.OpenRead(FilePath))
+-                        return (Settings)new DataContractJsonSerializer(typeof(Settings)).ReadObject(stream);
++                        return (ElecSettings)new DataContractJsonSerializer(typeof(ElecSettings)).ReadObject(stream);
+                 }
+             }
+             catch (Exception ex)
+             {
+                 Log.Error(ex);
+             }
+-            return new Settings();
++            return new ElecSettings();
+         }
+ 
+         public void Save()
+         {
+             Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
+             using (var stream = File.Create(FilePath))
+-                new DataContractJsonSerializer(typeof(Settings)).WriteObject(stream, this);
++                new DataContractJsonSerializer(typeof(ElecSettings)).WriteObject(stream, this);
+         }
+     }
+ }
+diff --git a/src/Core/LineStyles.cs b/src/Core/LineStyles.cs
+index 80b785b..4d0f7db 100644
+--- a/src/Core/LineStyles.cs
++++ b/src/Core/LineStyles.cs
+@@ -35,13 +35,13 @@ namespace ElecKit.Core
+             var names = new List<string> { "(default line style)" };
+             names.AddRange(all.Select(s => s.Name));
+ 
+-            int last = string.IsNullOrEmpty(Settings.Current.LastLineStyle) ? 0 : names.IndexOf(Settings.Current.LastLineStyle);
++            int last = string.IsNullOrEmpty(ElecSettings.Current.LastLineStyle) ? 0 : names.IndexOf(ElecSettings.Current.LastLineStyle);
+             int index = Dialogs.Choose(title, "Line style for the new detail lines:", names, Math.Max(last, 0));
+             if (index < 0) return false;
+ 
+             style = index == 0 ? null : all[index - 1];
+-            Settings.Current.LastLineStyle = index == 0 ? null : names[index];
+-            Settings.Current.Save();
++            ElecSettings.Current.LastLineStyle = index == 0 ? null : names[index];
++            ElecSettings.Current.Save();
+             return true;
+         }
+     }
+diff --git a/src/Core/Units.cs b/src/Core/UnitConv.cs
+similarity index 96%
+rename from src/Core/Units.cs
+rename to src/Core/UnitConv.cs
+index ae0bbb0..d9ae821 100644
+--- a/src/Core/Units.cs
++++ b/src/Core/UnitConv.cs
+@@ -2,7 +2,7 @@ using System.Globalization;
+ 
+ namespace ElecKit.Core
+ {
+-    public static class Units
++    public static class UnitConv
+     {
+         public const double MmPerFoot = 304.8;
+ 

@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace ElecKit.Core
 {
-    public static class Units
+    public static class UnitConv
     {
         public const double MmPerFoot = 304.8;
 

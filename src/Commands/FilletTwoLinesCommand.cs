@@ -19,7 +19,7 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
-            double radius = Units.MmToFeet(Settings.Current.EffectiveFilletRadiusMm);
+            double radius = UnitConv.MmToFeet(ElecSettings.Current.EffectiveFilletRadiusMm);
             var filter = new PredicateFilter(e =>
             {
                 var curve = e as DetailCurve;

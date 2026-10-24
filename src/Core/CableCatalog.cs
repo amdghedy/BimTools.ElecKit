@@ -66,7 +66,7 @@ namespace ElecKit.Core
             {
                 list.Add(new CableDefinition
                 {
-                    Name = "1C x " + Units.Format(sizes[i]) + " mm2",
+                    Name = "1C x " + UnitConv.Format(sizes[i]) + " mm2",
                     Conductors = 1,
                     CrossSectionMm2 = sizes[i],
                     OuterDiameterMm = diameters[i],

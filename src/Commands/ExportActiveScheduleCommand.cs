@@ -20,13 +20,13 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
-            string folder = Settings.Current.ResolveReportFolder();
+            string folder = ElecSettings.Current.ResolveReportFolder();
             string fileName = FileNames.Safe(schedule.Name) + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
             schedule.Export(folder, fileName, ScheduleExport.Options());
 
             string path = Path.Combine(folder, fileName);
             TaskDialog.Show("Export Active Schedule", "Saved to:\n" + path);
-            if (!Settings.Current.DoNotOpenReports) Process.Start(path);
+            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(path);
             return Result.Succeeded;
         }
     }

@@ -15,29 +15,32 @@ namespace ElecKit.Commands
         {
             Reference picked = ctx.UiDoc.Selection.PickObject(
                 ObjectType.Element, "Pick an element that is on a circuit");
-
-            var instance = ctx.Doc.GetElement(picked) as FamilyInstance;
-            if (instance == null || instance.MEPModel == null)
-            {
-                TaskDialog.Show("Select by Circuit", "That element is not an electrical family instance.");
-                return Result.Cancelled;
-            }
+            int pickedId = ctx.Doc.GetElement(picked).Id.IntegerValue;
 
             var ids = new List<ElementId>();
-            var seen = new HashSet<ElementId>();
-            var systems = instance.MEPModel.GetElectricalSystems();
-            if (systems != null)
+            var seen = new HashSet<int>();
+            bool onCircuit = false;
+
+            foreach (Element item in new FilteredElementCollector(ctx.Doc).OfClass(typeof(ElectricalSystem)))
             {
-                foreach (ElectricalSystem system in systems)
+                var system = item as ElectricalSystem;
+                if (system == null) continue;
+
+                bool contains = false;
+                foreach (Element member in system.Elements)
                 {
-                    foreach (Element e in system.Elements)
-                    {
-                        if (seen.Add(e.Id)) ids.Add(e.Id);
-                    }
+                    if (member.Id.IntegerValue == pickedId) { contains = true; break; }
+                }
+                if (!contains) continue;
+
+                onCircuit = true;
+                foreach (Element member in system.Elements)
+                {
+                    if (seen.Add(member.Id.IntegerValue)) ids.Add(member.Id);
                 }
             }
 
-            if (ids.Count == 0)
+            if (!onCircuit)
             {
                 TaskDialog.Show("Select by Circuit", "That element is not on any circuit.");
                 return Result.Cancelled;

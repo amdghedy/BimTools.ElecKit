@@ -64,13 +64,13 @@ namespace ElecKit.Commands
             int index = 0;
             if (types.Count > 1)
             {
-                int last = types.FindIndex(t => t.Name == Settings.Current.LastWireType);
+                int last = types.FindIndex(t => t.Name == ElecSettings.Current.LastWireType);
                 index = Dialogs.Choose("Detail Lines to Wires", "Wire type:", types.Select(t => t.Name).ToList(), last);
                 if (index < 0) return Result.Cancelled;
             }
             WireType wireType = types[index];
-            Settings.Current.LastWireType = wireType.Name;
-            Settings.Current.Save();
+            ElecSettings.Current.LastWireType = wireType.Name;
+            ElecSettings.Current.Save();
 
             var ask = new TaskDialog("Detail Lines to Wires");
             ask.MainInstruction = "Delete the source detail lines after converting?";
@@ -101,7 +101,7 @@ namespace ElecKit.Commands
 
                     try
                     {
-                        Wire.Create(ctx.Doc, wireType.Id, view.Id, WiringType.Chamfer, points, null, null);
+                        Wire.Create(ctx.Doc, wireType.Id, view.Id, WiringType.Chamfer, points, (Connector)null, (Connector)null);
                         created++;
                     }
                     catch (Exception ex)

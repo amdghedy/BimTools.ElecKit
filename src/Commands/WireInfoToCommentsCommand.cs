@@ -59,11 +59,11 @@ namespace ElecKit.Commands
 
             string distanceAnswer = Dialogs.Ask("Wire Info to Comments",
                 "Look for devices and wires within this distance of each conduit, in millimetres (measured in plan):",
-                Units.Format(Settings.Current.EffectiveNearbyMm));
+                UnitConv.Format(ElecSettings.Current.EffectiveNearbyMm));
             if (distanceAnswer == null) return Result.Cancelled;
 
             double distanceMm;
-            if (!Units.TryParseNumber(distanceAnswer, out distanceMm) || distanceMm <= 0)
+            if (!UnitConv.TryParseNumber(distanceAnswer, out distanceMm) || distanceMm <= 0)
             {
                 TaskDialog.Show("Wire Info to Comments", "Enter a number greater than zero, for example 500.");
                 return Result.Cancelled;
@@ -73,9 +73,9 @@ namespace ElecKit.Commands
                 new List<string> { "Replace it", "Append to it" }, 0);
             if (writeMode < 0) return Result.Cancelled;
 
-            Settings.Current.NearbyMm = distanceMm;
-            Settings.Current.Save();
-            double range = Units.MmToFeet(distanceMm);
+            ElecSettings.Current.NearbyMm = distanceMm;
+            ElecSettings.Current.Save();
+            double range = UnitConv.MmToFeet(distanceMm);
 
             List<Candidate> candidates = GatherCandidates(ctx.Doc, view);
             if (candidates.Count == 0)
@@ -126,7 +126,7 @@ namespace ElecKit.Commands
             });
 
             string result = updated + " conduit(s) updated.";
-            if (noMatch > 0) result += "\n" + noMatch + " conduit(s) had nothing within " + Units.Format(distanceMm) + " mm.";
+            if (noMatch > 0) result += "\n" + noMatch + " conduit(s) had nothing within " + UnitConv.Format(distanceMm) + " mm.";
             if (readOnly > 0) result += "\n" + readOnly + " conduit(s) have a read-only Comments parameter.";
             TaskDialog.Show("Wire Info to Comments", result);
             return Result.Succeeded;
@@ -149,7 +149,8 @@ namespace ElecKit.Commands
             foreach (Wire wire in new FilteredElementCollector(doc, view.Id).OfClass(typeof(Wire)).Cast<Wire>())
             {
                 string circuit = CircuitInfo.Of(wire);
-                string wireType = wire.WireType != null ? wire.WireType.Name : null;
+                Element wireTypeElement = doc.GetElement(wire.GetTypeId());
+                string wireType = wireTypeElement != null ? wireTypeElement.Name : null;
                 if (circuit == null && wireType == null) continue;
 
                 // sample the vertices and the middle of each segment

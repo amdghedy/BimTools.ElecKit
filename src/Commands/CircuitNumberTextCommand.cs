@@ -77,8 +77,8 @@ namespace ElecKit.Commands
                 }
             }
 
-            Settings.Current.LastCircuitParam = parameterName;
-            Settings.Current.Save();
+            ElecSettings.Current.LastCircuitParam = parameterName;
+            ElecSettings.Current.Save();
 
             int written = 0, noParameter = 0, noCircuit = 0;
             ctx.Transact("Circuit number text", () =>
@@ -127,7 +127,7 @@ namespace ElecKit.Commands
             }
             names.Sort(StringComparer.OrdinalIgnoreCase);
 
-            int index = names.IndexOf(Settings.Current.LastCircuitParam ?? "");
+            int index = names.IndexOf(ElecSettings.Current.LastCircuitParam ?? "");
             if (index < 0)
             {
                 Parameter comments = sample.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);

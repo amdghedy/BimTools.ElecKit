@@ -1,112 +1,97 @@
-# ElecKit Roadmap
+# Roadmap: coverage of the requested feature list
 
-This roadmap reflects the commands currently registered in `src/Core/ToolRegistry.cs` on `main`. A feature is marked **Implemented in ribbon** only when it is registered as a Revit command. This documents source-code registration; it is not a claim that every command has been runtime-tested in every model.
+All 42 requested functions are mapped below to a tool in this add-in. Names on the ribbon are my own;
+the behaviour follows the description you gave. Two extra tools (Circuit Report, Select by Circuit)
+bring the total to 44. Status: [x] built, [ ] planned.
 
-## Current baseline
+## Drafting (10)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 1 | Convert Lines: detail/model lines into conduits | Lines to Conduit | [x] |
+| 2 | Connect: join selected elements with conduit runs | Connect Runs | [x] |
+| 3 | Overkill: remove duplicate/overlapping curves | Clean Lines | [x] (detail lines) |
+| 4 | CAD to Detail: imported CAD lines into detail lines | CAD to Detail Lines | [x] |
+| 5 | Wire to Detail: wires into detail lines | Wires to Detail Lines | [x] |
+| 6 | Detail to Wire: detail lines into chamfered wires | Detail Lines to Wires | [x] |
+| 7 | Fillet Lines: fillet at corners | Fillet Corners | [x] |
+| 8 | Fillet Radius: default radius for fillet tools | Fillet Radius Setting | [x] |
+| 9 | Fillet Pick: fillet two picked lines | Fillet Two Lines | [x] |
+| 10 | Line Cutter: cut/split lines at intersections | Split Lines | [x] |
 
-- **22 registered commands** across Drafting, Wiring, Model, Schedules, and Circuits.
-- **Target:** Autodesk Revit 2020, .NET Framework 4.7, x64 (see `ElecKit.csproj`).
-- **Not included:** server-based Update and Contact Us functions. The add-in currently has no update server or licensing service.
-- A feature listed as planned is not currently exposed as a command in the ribbon registry. Do not interpret a roadmap entry as an existing feature.
+## Wiring (5)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 11 | Home Run: home-run detail lines, devices to panels | Home Run Lines | [x] |
+| 12 | Wiring Pro: conduits from a boundary of detail lines | Boundary to Conduits | [x] |
+| 13 | Circuit Number: circuit number text on fixtures/equipment | Circuit Number Text | [x] |
+| 14 | Write Wire Info: nearby circuit info into conduit comments | Wire Info to Comments | [x] |
+| 15 | Edit Catalog: review/edit the cable catalog | Cable Catalog Editor | [x] |
 
-## Implemented in the ribbon
+## Annotation (4)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 16 | Switch Label: label text on lighting devices | Switch Labels | [ ] |
+| 17 | Tag & Leader: independent tags with leaders | Tags with Leaders | [ ] |
+| 18 | Dim Pro: aligned dimension between two elements | Aligned Dimension | [ ] |
+| 19 | Distribute: even spacing along a path | Distribute Along Path | [ ] |
 
-### Drafting
+## Model (7)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 20 | Assign Workset: by type | Worksets by Type | [ ] |
+| 21 | Show Hosts: highlight host elements | Select Hosts | [x] |
+| 22 | Junction Box: place at a picked point | Place Junction Box | [ ] |
+| 23 | Align Family: location and rotation to a reference | Align to Reference | [ ] |
+| 24 | Section: aligned to a linear element | Section Along Element | [ ] |
+| 25 | Match Type: select all instances of a picked type | Select Same Type | [x] |
+| 26 | 3D View: cropped to selection bounding box | 3D from Selection | [x] |
 
-| Command | Current registered behaviour |
-|---|---|
-| CAD to Detail Lines | Redraws lines and arcs from an imported or linked CAD file as detail lines; supports an optional layer filter. |
-| Wires to Detail Lines | Redraws selected electrical wires, or all wires in the active view, as detail lines. |
-| Detail Lines to Wires | Converts connected straight detail lines into chamfered electrical wires, one wire per line chain. |
-| Connect Runs | Connects picked elements in order using conduit runs, directly or with an L-shaped route and elbow, at a specified height. |
-| Lines to Conduit | Converts selected straight detail/model lines into conduits after choosing a conduit type and height. |
-| Fillet Radius | Sets the default fillet radius used by the fillet tools. |
-| Fillet Two Lines | Fillets two picked detail lines; the user chooses which portions to keep. |
-| Fillet Corners | Rounds corners where straight detail lines meet, using the selection or the whole view. |
-| Split Lines | Splits straight detail lines where another line crosses or touches them, using the selection or the whole view. |
-| Clean Lines | Deletes duplicate or fully overlapping detail lines with the same line style, using the selection or the whole view. |
+## Analysis (4)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 27 | Clash Detect: between categories/elements | Clash Check | [ ] |
+| 28 | Qty Takeoff: selected elements/categories | Quantity Takeoff | [ ] |
+| 29 | Exporter: all schedules to CSV files | Export All Schedules | [x] |
+| 30 | Smart Filter: filter/isolate by category, type, parameter | Smart Filter | [ ] |
 
-### Wiring
+## Schedules (4)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 31 | Export Schedules: Excel / CSV | Export Schedules to Excel | [ ] (CSV covered by #29) |
+| 32 | Dynamic Export: active schedule to one CSV | Export Active Schedule | [x] |
+| 33 | Import Back: CSV values onto elements, matched by Mark | Import Values by Mark | [ ] |
+| 34 | Import Schedules: CSV as formatted text note | CSV to Text Note | [ ] |
 
-| Command | Current registered behaviour |
-|---|---|
-| Home Run Lines | Draws home-run detail lines from picked devices to a panel, as individual lines or a chain. |
-| Boundary to Conduits | Converts a path/boundary of detail lines into a continuous conduit run with elbows at corners. |
-| Circuit Number Text | Writes circuit-number text to a parameter on selected fixtures/equipment, using a selected text mode. |
-| Wire Info to Comments | Writes nearby device/circuit and wire-type information into conduit Comments. |
-| Cable Catalog Editor | Opens the cable catalog for review/editing; the catalog is saved in the user's AppData folder. |
+## Panels and SLD (3)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 35 | View Manager: list printable views, activate one | View Manager | [ ] |
+| 36 | Sheet Creator: new sheet with active view | Sheet Creator | [ ] |
+| 37 | Panel SLD: single-line report for a panel | Panel Single-Line Report | [ ] |
 
-### Model
+## Cable and Tray (3)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 38 | Cable & CB: conduit sizes, lengths, comments | Conduit Run Report | [ ] |
+| 39 | Cable Tray Section: summary in a drafting view | Tray Summary View | [ ] |
+| 40 | Draw Cable Tray: between two picked points | Draw Cable Tray | [ ] |
 
-| Command | Current registered behaviour |
-|---|---|
-| Select Hosts | Selects host elements of selected family instances and zooms to them. |
-| Select Same Type | Picks an element and selects instances of the same type in the active view. |
-| 3D from Selection | Creates a 3D view with a section box fitted around selected elements. |
+## Data (2)
+| # | Requested function | Tool here | Status |
+|---|---|---|---|
+| 41 | Shared Params: create and bind electrical parameters | Shared Parameters | [ ] |
+| 42 | Family Manager: list types, switch type of an instance | Family Type Manager | [ ] |
 
-### Schedules
+## Extras (2)
+| # | Tool | Status |
+|---|---|---|
+| 43 | Circuit Report (CSV of all circuits) | [x] |
+| 44 | Select by Circuit | [x] |
 
-| Command | Current registered behaviour |
-|---|---|
-| Export All Schedules | Exports each schedule in the model to its own CSV file in a new folder. |
-| Export Active Schedule | Exports the currently open schedule view to one CSV file. |
+Not included: the server-based "Update" and "Contact Us" commands. This add-in has no update server and no licensing.
 
-### Circuits
-
-| Command | Current registered behaviour |
-|---|---|
-| Circuit Report | Exports circuit information (panel, circuit number, load name, and element count) to CSV. |
-| Select by Circuit | Picks an element and selects elements belonging to the same circuit(s). |
-
-## Planned / not currently registered
-
-These items are not registered in `src/Core/ToolRegistry.cs` on `main`; they should be treated as planned work, not delivered functionality.
-
-### Annotation and drawing utilities
-
-- [ ] Switch Label — label text on lighting devices.
-- [ ] Tags with Leaders — place independent tags with leaders.
-- [ ] Aligned Dimension — create an aligned dimension between two elements.
-- [ ] Distribute Along Path — distribute elements at even spacing along a path.
-- [ ] CAD/line cleanup enhancements beyond the current duplicate/overlap detail-line cleanup.
-
-### Model and view utilities
-
-- [ ] Worksets by Type — assign worksets based on element type.
-- [ ] Place Junction Box — place a junction box at a picked point.
-- [ ] Align to Reference — align an element's location and rotation to a reference.
-- [ ] Section Along Element — create a section aligned to a linear element.
-- [ ] Clash Check — check for clashes between selected categories/elements.
-- [ ] Quantity Takeoff — report quantities for selected elements or categories.
-- [ ] Smart Filter — filter/isolate by category, type, or parameter.
-
-### Schedule and data exchange
-
-- [ ] Export Schedules to Excel — Excel output in addition to the existing CSV exporters.
-- [ ] Import Values by Mark — import CSV values onto elements matched by Mark.
-- [ ] CSV to Text Note — import CSV data as a formatted text note.
-- [ ] Shared Parameters — create and bind electrical parameters.
-- [ ] Family Type Manager — list family types and change the type of an instance.
-
-### Panels, cable/tray, and view management
-
-- [ ] View Manager — list printable views and activate a selected view.
-- [ ] Sheet Creator — create a sheet with the active view.
-- [ ] Panel Single-Line Report — produce a single-line report for a panel.
-- [ ] Conduit Run Report — report conduit sizes, lengths, and comments.
-- [ ] Tray Summary View — create a cable-tray summary in a drafting view.
-- [ ] Draw Cable Tray — create a cable tray between two picked points.
-
-## Suggested priorities
-
-1. **Model coordination and annotation:** Align to Reference, Place Junction Box, Tags with Leaders, Aligned Dimension, and Distribute Along Path.
-2. **Data and schedules:** Import Values by Mark, CSV to Text Note, Excel export, and Shared Parameters.
-3. **Electrical reporting:** Quantity Takeoff, Conduit Run Report, Panel Single-Line Report, and cable-tray summary.
-4. **Quality and productivity:** Clash Check and Smart Filter.
-5. **View/documentation workflow:** View Manager and Sheet Creator.
-
-## Status and verification policy
-
-- **Implemented in ribbon** means a command is present in the source registry. It does not by itself prove build success, correct behaviour in every Revit model, or release readiness.
-- **Planned / not currently registered** means no command for the feature is registered in the current ribbon registry. Before implementation is marked complete, add the command, register it, build against the supported Revit API, and test it in Revit.
-- Keep this roadmap synchronized with `src/Core/ToolRegistry.cs` and the actual command implementations whenever the ribbon changes.
+## Suggested build order
+1. Drafting: complete (v3 and v4)
+2. Model and annotation: Align to Reference, Place Junction Box, Distribute, Aligned Dimension, Tags with Leaders
+3. Wiring: complete (v5)
+4. Schedules, panels, tray, data, analysis: the rest

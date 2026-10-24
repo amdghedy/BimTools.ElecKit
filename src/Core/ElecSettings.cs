@@ -6,7 +6,7 @@ using System.Runtime.Serialization.Json;
 namespace ElecKit.Core
 {
     [DataContract]
-    public sealed class Settings
+    public sealed class ElecSettings
     {
         [DataMember] public string ReportFolder { get; set; }
         [DataMember] public bool DoNotOpenReports { get; set; }
@@ -36,9 +36,9 @@ namespace ElecKit.Core
             get { return NearbyMm.HasValue && NearbyMm.Value > 0 ? NearbyMm.Value : 500.0; }
         }
 
-        private static Settings _current;
+        private static ElecSettings _current;
 
-        public static Settings Current
+        public static ElecSettings Current
         {
             get { return _current ?? (_current = Load()); }
         }
@@ -60,28 +60,28 @@ namespace ElecKit.Core
             return Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         }
 
-        private static Settings Load()
+        private static ElecSettings Load()
         {
             try
             {
                 if (File.Exists(FilePath))
                 {
                     using (var stream = File.OpenRead(FilePath))
-                        return (Settings)new DataContractJsonSerializer(typeof(Settings)).ReadObject(stream);
+                        return (ElecSettings)new DataContractJsonSerializer(typeof(ElecSettings)).ReadObject(stream);
                 }
             }
             catch (Exception ex)
             {
                 Log.Error(ex);
             }
-            return new Settings();
+            return new ElecSettings();
         }
 
         public void Save()
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
             using (var stream = File.Create(FilePath))
-                new DataContractJsonSerializer(typeof(Settings)).WriteObject(stream, this);
+                new DataContractJsonSerializer(typeof(ElecSettings)).WriteObject(stream, this);
         }
     }
 }
