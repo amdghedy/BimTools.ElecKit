@@ -14,6 +14,11 @@
     <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\2020\</RevitAddinsDir>
   </PropertyGroup>
 
+  <!-- Keep standalone test sources out of the Revit add-in compilation. -->
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
+
   <!-- Local build: use the DLLs from your Revit 2020 install -->
   <ItemGroup Condition="'$(HasLocalRevit)' == 'true'">
     <Reference Include="RevitAPI">
