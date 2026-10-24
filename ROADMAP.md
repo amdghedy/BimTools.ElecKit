@@ -25,8 +25,8 @@ The following capabilities exist as named commands or command groups in ElecTool
 | Priority | Gap | ElecTool reference | Acceptance criteria for ElecKit |
 |---|---|---|---|
 | P0 | Clean Lines safety | `OverkillCommand.cs` | Remove only exact duplicates or shorter collinear segments fully contained by a retained segment. Preserve partial overlaps and disjoint collinear segments. |
-| P1 | Clash detection | `ClashDetectionCommand.cs`, `NewToolsCoordination.cs` | **Partially implemented.** Exports active-view MEP bounding-box overlap candidates with IDs to CSV and explicitly labels them as candidates, not confirmed solid clashes. Selection/category filters, transformed linked-model geometry, and exact solid intersection remain open. |
-| P1 | Quantity takeoff | `QuantityTakeoffCommand.cs`, `NewToolsQA.cs` | Category/filter selection, correct internal-unit conversion, grouped totals, and CSV output with clear units. |
+| P1 | Clash detection | `ClashDetectionCommand.cs`, `NewToolsCoordination.cs` | **Partially implemented.** Exports active-view MEP bounding-box candidates with IDs and tests positive-volume solid intersections where usable solids exist. CSV rows distinguish confirmed intersections, no positive-volume intersection, and unavailable/incomplete checks. Selection/category filters and linked-model geometry remain open; live-model verification is still required. |
+| P1 | Quantity takeoff | `QuantityTakeoffCommand.cs`, `NewToolsQA.cs` | Grouped counts and MEP curve lengths in millimetres are exported with category/family/type and resolved level names where available. Category selection, expanded reporting and regression tests remain open. |
 | P1 | Schedule and parameter data exchange | `ScheduleDynamicExportCommand.cs`, `ScheduleDynamicImportCommand.cs`, `ImportExcelAsScheduleCommand.cs` | **Partially implemented.** `ExportElementParametersCommand.cs` exports selected instances with ElementId, Mark and common writable instance parameters; `ImportScheduleValuesCommand.cs` imports the keyed CSV, previews before changes, skips blank cells and reports failures. This is an element-parameter round-trip, not a native schedule-row round-trip; type parameters, ElementId-valued parameters, and grouped schedule rows are not covered. Duplicate headers and duplicate row keys are rejected. |
 | P1 | Circuit and panel tools | `NewToolsCircuits.cs`, `AssignCircuitNumberCommand.cs`, `PanelSLDCommand.cs` | Validate circuit/panel relationships; report skipped items; never silently change circuit assignments. |
 | P1 | Conduit and cable-tray workflows | `NewToolsConduit.cs`, `NewToolsTray.cs`, `CableConduitCommand.cs`, `CableTrayCommand.cs`, `DrawCableTrayCommand.cs` | Validate routing inputs, sizes and fittings; report failed segments; preserve user control of type and level. |
@@ -46,11 +46,11 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 ## Reliability and release gaps
 
 - [x] Clean Lines: restrict deletion to duplicate or fully contained finite segments; partial overlaps and disjoint collinear segments must remain.
-- [ ] Build verification: require a successful CI build for every change and retain the build log/artifact.
+- [x] Build verification: the latest successful CI run validates the source tree through the workset collector fix; continue requiring a successful run for every subsequent change.
 - [ ] Runtime verification: test commands inside Revit 2020 with a disposable model before calling them production-ready.
 - [ ] Transaction consistency: audit conversion and creation commands for clear rollback behavior and partial-success reporting.
 - [x] Ribbon startup: suppress only the known “tab already exists” condition; surface unrelated startup failures.
-- [x] Deployment: Debug copy failures are no longer suppressed by `ContinueOnError`; the latest project-file change is awaiting CI verification.
+- [x] Deployment: Debug copy failures are no longer suppressed by `ContinueOnError`.
 - [ ] Automated tests: add testable pure logic for geometry, filtering, CSV parsing, parameter mapping and unit conversions where practical.\n- [ ] Data import validation: reject duplicate parameter headers and verify the import file contains unique row keys before applying changes.\n- [ ] Quantity takeoff: test each supported category and confirm the active view is a valid model view; add regression fixtures for grouped totals and curve-length conversion.
 - [ ] Documentation: maintain a command inventory and clearly distinguish source-present, CI-build-passing and Revit-runtime-tested states.
 - [ ] Remove or archive `fix-revit2020-compile.patch` once its changes are confirmed to be incorporated and no longer needed.
