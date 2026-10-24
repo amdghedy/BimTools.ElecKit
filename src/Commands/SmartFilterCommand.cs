@@ -9,7 +9,7 @@ using ElecKit.Core;
 
 namespace ElecKit.Commands
 {
-    [Transaction(TransactionMode.ReadOnly)]
+    [Transaction(TransactionMode.Manual)]
     public class SmartFilterCommand : ElecCommand
     {
         protected override Result Run(ToolContext ctx, ref string message)
@@ -68,7 +68,35 @@ namespace ElecKit.Commands
             if (ids.Count == 0)
             { TaskDialog.Show("Smart Filter", "No matching elements were found in the active view."); return Result.Succeeded; }
             ctx.UiDoc.Selection.SetElementIds(ids);
-            TaskDialog.Show("Smart Filter", ids.Count + " element(s) selected in the active view.");
+
+            var action = new TaskDialog("Smart Filter");
+            action.MainInstruction = ids.Count + " matching element(s) found.";
+            action.MainContent = "Choose whether to keep the selection only or temporarily isolate the matches in this view.";
+            action.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Select matches only");
+            action.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Temporarily isolate matches");
+            action.CommonButtons = TaskDialogCommonButtons.Cancel;
+            TaskDialogResult actionResult = action.Show();
+            if (actionResult == TaskDialogResult.CommandLink2)
+            {
+                try
+                {
+                    ctx.Transact("Temporarily isolate Smart Filter matches", delegate
+                    {
+                        ctx.Doc.ActiveView.IsolateElementsTemporary(ids);
+                    });
+                    TaskDialog.Show("Smart Filter", ids.Count + " element(s) isolated temporarily in the active view. Use Revit's Reset Temporary Hide/Isolate control to restore the view.");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex);
+                    TaskDialog.Show("Smart Filter", "Temporary isolation failed. The matching elements remain selected.\\n" + ex.Message);
+                }
+            }
+            else if (actionResult == TaskDialogResult.CommandLink1)
+            {
+                TaskDialog.Show("Smart Filter", ids.Count + " element(s) selected in the active view.");
+            }
+            else return Result.Cancelled;
             return Result.Succeeded;
         }
 
