@@ -100,7 +100,7 @@ namespace ElecKit.Core
               typeof(SmartFilterCommand)),
 
             T("ClashDetection", "Clash\nReview", "Model",
-              "Exports MEP bounding-box overlap candidates from the active view to CSV. Treat results as screening candidates and verify exact geometry.",
+              "Exports host/linked MEP overlap candidates to CSV. Choose MEP-only or MEP plus architectural/structural categories; verify exact geometry and clearances.",
               typeof(ClashDetectionCommand)),
 
             // Quantity reporting and data exchange
