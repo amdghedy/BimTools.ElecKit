@@ -54,7 +54,7 @@ namespace ElecKit.Commands
             }
             int shape = Dialogs.Choose("Route Cable Tray", "Route shape:", new List<string>
             {
-                "Direct (one straight tray segment)", "L shape: along X first, then Y", "L shape: along Y first, then X"
+                "Direct (one straight tray segment)", "L shape: along X first, then Y", "L shape: along Y first, then X", "Multi-segment path through picked anchors (elbows at turns)"
             }, 1);
             if (shape < 0) return Result.Cancelled;
             CableTrayType trayType = types[typeIndex];
@@ -67,6 +67,59 @@ namespace ElecKit.Commands
                 if (anchor != null) points.Add(new XYZ(anchor.X, anchor.Y, z));
             }
             if (points.Count < 2) return Result.Cancelled;
+            if (shape == 3)
+            {
+                int pathTrays = 0, pathElbows = 0;
+                string pathFailure = null;
+                ctx.Transact("Route cable tray polyline", () =>
+                {
+                    using (var sub = new SubTransaction(ctx.Doc))
+                    {
+                        sub.Start();
+                        try
+                        {
+                            var made = new List<CableTray>();
+                            for (int i = 0; i < points.Count - 1; i++)
+                            {
+                                if (points[i].DistanceTo(points[i + 1]) < MinLegFeet)
+                                    throw new InvalidOperationException("Route anchors " + (i + 1) + " and " + (i + 2) + " are coincident.");
+                                made.Add(CableTray.Create(ctx.Doc, trayType.Id, points[i], points[i + 1], level.Id));
+                            }
+                            for (int i = 1; i < made.Count; i++)
+                            {
+                                XYZ corner = points[i];
+                                XYZ incoming = corner.Subtract(points[i - 1]).Normalize();
+                                XYZ outgoing = points[i + 1].Subtract(corner).Normalize();
+                                double dot = incoming.DotProduct(outgoing);
+                                if (dot > 0.99999) continue;
+                                if (dot < -0.99999)
+                                    throw new InvalidOperationException("Route doubles back at anchor " + (i + 1) + "; split the route into separate runs.");
+                                Connector c1 = Nearest(made[i - 1], corner);
+                                Connector c2 = Nearest(made[i], corner);
+                                if (c1 == null || c2 == null ||
+                                    c1.Origin.DistanceTo(corner) > 0.1 || c2.Origin.DistanceTo(corner) > 0.1)
+                                    throw new InvalidOperationException("Revit connectors are not within 0.1 ft of turning anchor " + (i + 1) + ".");
+                                ctx.Doc.Create.NewElbowFitting(c1, c2);
+                                pathElbows++;
+                            }
+                            sub.Commit();
+                            pathTrays = made.Count;
+                        }
+                        catch (Exception ex)
+                        {
+                            if (sub.GetStatus() == TransactionStatus.Started) sub.RollBack();
+                            pathFailure = ex.Message;
+                            Log.Error(ex);
+                        }
+                    }
+                });
+                string pathSummary = pathFailure == null
+                    ? "Multi-segment cable tray path created.\nSegments: " + pathTrays + "\nElbows: " + pathElbows
+                    : "The complete cable tray path was rolled back.\nReason: " + pathFailure;
+                pathSummary += "\n\nVerify connector continuity, dimensions, clearance and tray routing preferences in Revit.";
+                TaskDialog.Show("Route Cable Tray", pathSummary);
+                return pathFailure == null ? Result.Succeeded : Result.Failed;
+            }
             int trays = 0, elbows = 0, failedPairs = 0, skippedPairs = 0;
             var failures = new List<string>();
             ctx.Transact("Route cable tray", () =>

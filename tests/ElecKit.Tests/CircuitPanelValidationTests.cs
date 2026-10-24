@@ -22,6 +22,25 @@ namespace ElecKit.Tests
             Assert.False(result.CanAssign);
             Assert.Contains(result.Errors, x => x.Contains("exceeds declared panel capacity"));
         }
+        [Fact] public void ExistingPanelLoadPlusNewCircuitCannotExceedCapacity()
+        {
+            var result = CircuitPanelValidation.Evaluate(230, 230, 1, 1, 2500, 10000, 8000);
+            Assert.False(result.CanAssign);
+            Assert.Contains(result.Errors, x => x.Contains("Projected panel load"));
+        }
+        [Fact] public void ProjectedPanelLoadAtCapacityPasses()
+        {
+            var result = CircuitPanelValidation.Evaluate(230, 230, 1, 1, 2000, 10000, 8000);
+            Assert.True(result.CanAssign);
+            Assert.Empty(result.Errors);
+            Assert.Empty(result.Warnings);
+        }
+        [Fact] public void UnknownExistingPanelLoadIsNotTreatedAsZero()
+        {
+            var result = CircuitPanelValidation.Evaluate(230, 230, 1, 1, 2000, 10000, null);
+            Assert.True(result.CanAssign);
+            Assert.Contains(result.Warnings, x => x.Contains("Existing destination-panel load could not be verified"));
+        }
         [Fact] public void MissingRatingsWarnInsteadOfAssumingCompatibility()
         {
             var result = CircuitPanelValidation.Evaluate(null, null, null, null, null, null);

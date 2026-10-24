@@ -71,6 +71,37 @@ namespace ElecKit.Commands
             return null;
         }
 
+        private static double? ReadLoadVa(ElectricalSystem system)
+        {
+            if (system == null) return null;
+            Parameter p = system.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD);
+            if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                !double.IsInfinity(p.AsDouble()) && p.AsDouble() >= 0) return p.AsDouble();
+            foreach (string name in new[] { "Apparent Load (VA)", "Connected Load (VA)" })
+            {
+                p = system.LookupParameter(name);
+                if (p != null && p.StorageType == StorageType.Double && !double.IsNaN(p.AsDouble()) &&
+                    !double.IsInfinity(p.AsDouble()) && p.AsDouble() >= 0) return p.AsDouble();
+            }
+            return null;
+        }
+        private static double? ExistingPanelLoadVa(Document doc, FamilyInstance panel)
+        {
+            double total = 0.0;
+            foreach (Element element in new FilteredElementCollector(doc).OfClass(typeof(ElectricalSystem)))
+            {
+                ElectricalSystem system = element as ElectricalSystem;
+                if (system == null) continue;
+                FamilyInstance assigned = null;
+                try { assigned = system.BaseEquipment; } catch { return null; }
+                if (assigned == null || assigned.Id != panel.Id) continue;
+                double? load = ReadLoadVa(system);
+                if (!load.HasValue) return null;
+                total += load.Value;
+                if (double.IsNaN(total) || double.IsInfinity(total)) return null;
+            }
+            return total;
+        }
         protected override Result Run(ToolContext ctx, ref string message)
         {
             Reference circuitReference;
@@ -155,10 +186,10 @@ namespace ElecKit.Commands
             double? panelVoltage = ReadDouble(panel, "Voltage", "Rated Voltage", "Nominal Voltage");
             int? circuitPoles = ReadInt(targetSystem, "Number of Poles", "Poles", "Pole Count");
             int? panelPoles = ReadInt(panel, "Number of Poles", "Poles", "Pole Count");
-            Parameter loadParameter = targetSystem.get_Parameter(BuiltInParameter.RBS_ELEC_APPARENT_LOAD);
-            double? loadVa = loadParameter != null && loadParameter.StorageType == StorageType.Double ? (double?)loadParameter.AsDouble() : null;
+            double? loadVa = ReadLoadVa(targetSystem);
+            double? existingPanelLoadVa = ExistingPanelLoadVa(ctx.Doc, panel);
             CircuitPanelCheck preflight = CircuitPanelValidation.Evaluate(
-                circuitVoltage, panelVoltage, circuitPoles, panelPoles, loadVa, ReadCapacityVa(panel));
+                circuitVoltage, panelVoltage, circuitPoles, panelPoles, loadVa, ReadCapacityVa(panel), existingPanelLoadVa);
             if (!preflight.CanAssign)
             {
                 TaskDialog.Show("Assign Circuit Panel", "Assignment blocked because the available model data shows a known conflict:\n\n" +

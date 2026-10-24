@@ -92,3 +92,7 @@ Some ElecTool features are grouped inside the `NewTools*.cs` files, so the table
 
 - [x] Expanded tray workflows with straight-line conversion and connected/closed boundary routing; required elbow failures roll back each affected tray run.
 - [x] Tightened conduit routing consistency: Connect Runs no longer counts rolled-back L-shaped conduits as created, and required elbow failures roll back the pair; Boundary to Conduits rolls back the run on required elbow failure.
+
+- [x] Circuit assignment checks projected destination-panel load (existing assigned circuits plus proposed circuit) against explicit declared capacity; unknown existing loads are flagged for review.
+- [x] Boundary-to-conduit routing rolls back a run if any required elbow fitting fails rather than committing a discontinuous run.
+- [x] Route Cable Tray supports an ordered multi-segment path with elbow fittings at turns; a failed fitting rolls back the complete path.
