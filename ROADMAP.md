@@ -6,7 +6,7 @@ ElecKit is the focused, public electrical productivity add-in targeting Revit 20
 
 ## Current ElecKit baseline
 
-The main branch contains 24 command classes:
+The main branch contains 25 command classes:
 
 | Area | Implemented commands |
 |---|---|
@@ -25,7 +25,7 @@ The following capabilities exist as named commands or command groups in ElecTool
 | Priority | Gap | ElecTool reference | Acceptance criteria for ElecKit |
 |---|---|---|---|
 | P0 | Clean Lines safety | `OverkillCommand.cs` | Remove only exact duplicates or shorter collinear segments fully contained by a retained segment. Preserve partial overlaps and disjoint collinear segments. |
-| P1 | Clash detection | `ClashDetectionCommand.cs`, `NewToolsCoordination.cs` | User-selectable categories, explicit tolerance, deterministic pair results, element IDs and a review/export report. Avoid presenting bounding-box intersections as confirmed geometric clashes. |
+| P1 | Clash detection | `ClashDetectionCommand.cs`, `NewToolsCoordination.cs` | **Partially implemented.** Exports active-view MEP bounding-box overlap candidates with IDs to CSV and explicitly labels them as candidates, not confirmed solid clashes. Selection/category filters, transformed linked-model geometry, and exact solid intersection remain open. |
 | P1 | Quantity takeoff | `QuantityTakeoffCommand.cs`, `NewToolsQA.cs` | Category/filter selection, correct internal-unit conversion, grouped totals, and CSV output with clear units. |
 | P1 | Schedule round-trip | `ScheduleDynamicExportCommand.cs`, `ScheduleDynamicImportCommand.cs`, `ImportExcelAsScheduleCommand.cs` | **Partially implemented.** `ImportScheduleValuesCommand.cs` imports CSV by ElementId or unique Mark, previews before changes, skips blank cells, uses unit-aware parsing for doubles, and reports failures. A true keyed export/import round-trip still needs a matching export format that supplies stable ElementIds. |
 | P1 | Circuit and panel tools | `NewToolsCircuits.cs`, `AssignCircuitNumberCommand.cs`, `PanelSLDCommand.cs` | Validate circuit/panel relationships; report skipped items; never silently change circuit assignments. |
