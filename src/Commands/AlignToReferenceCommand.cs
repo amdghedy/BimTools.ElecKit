@@ -25,7 +25,7 @@ namespace ElecKit.Commands
                 "Pick the elements to align, then click Finish"))
             {
                 var instance = ctx.Doc.GetElement(r) as FamilyInstance;
-                if (instance != null && instance.Id.IntegerValue != reference.Id.IntegerValue) targets.Add(instance);
+                if (instance != null && RevitApiCompat.ElementIdValue(instance.Id) != RevitApiCompat.ElementIdValue(reference.Id)) targets.Add(instance);
             }
             if (targets.Count == 0) return Result.Cancelled;
 
