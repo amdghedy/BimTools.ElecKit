@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>ElecKit</Name>
+    <Assembly>ElecKit.dll</Assembly>
+    <FullClassName>ElecKit.App</FullClassName>
+    <ClientId>631e8237-5d36-4dc8-8fa9-c774e6b2317a</ClientId>
+    <VendorId>ELECKIT</VendorId>
+    <VendorDescription>ElecKit - Revit 2022</VendorDescription>
+  </AddIn>
+</RevitAddIns>
