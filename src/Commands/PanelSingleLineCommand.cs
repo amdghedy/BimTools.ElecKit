@@ -28,7 +28,7 @@ namespace ElecKit.Commands
         {
             Element panel = ctx.Doc.GetElement(ctx.UiDoc.Selection.PickObject(ObjectType.Element,
                 new PredicateFilter(e => e is FamilyInstance && e.Category != null &&
-                                         e.Category.Id.IntegerValue == (int)BuiltInCategory.OST_ElectricalEquipment),
+                                         RevitApiCompat.ElementIdValue(e.Category.Id) == (int)BuiltInCategory.OST_ElectricalEquipment),
                 "Pick the panel"));
 
             string panelName = Text(panel, BuiltInParameter.RBS_ELEC_PANEL_NAME);
@@ -40,7 +40,7 @@ namespace ElecKit.Commands
                 var system = item as ElectricalSystem;
                 if (system == null) continue;
                 FamilyInstance baseEquipment = system.BaseEquipment;
-                if (baseEquipment == null || baseEquipment.Id.IntegerValue != panel.Id.IntegerValue) continue;
+                if (baseEquipment == null || RevitApiCompat.ElementIdValue(baseEquipment.Id) != RevitApiCompat.ElementIdValue(panel.Id)) continue;
 
                 lines.Add(new CircuitLine
                 {
