@@ -3,18 +3,23 @@
   <PropertyGroup>
     <AssemblyName>ElecKit</AssemblyName>
     <RootNamespace>ElecKit</RootNamespace>
-    <!-- Revit 2020 runs on .NET Framework 4.7 -->
-    <TargetFramework>net47</TargetFramework>
+    <!-- Defaults preserve the original Revit 2020 build. Override with -p:RevitVersion=2021..2027. -->
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2020</RevitVersion>
+    <TargetFramework Condition="'$(RevitVersion)' == '2020'">net47</TargetFramework>
+    <TargetFramework Condition="'$(RevitVersion)' == '2021' or '$(RevitVersion)' == '2022' or '$(RevitVersion)' == '2023' or '$(RevitVersion)' == '2024'">net48</TargetFramework>
+    <TargetFramework Condition="'$(RevitVersion)' == '2025' or '$(RevitVersion)' == '2026'">net8.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(RevitVersion)' == '2027'">net10.0-windows</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <LangVersion>10.0</LangVersion>
-    <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit 2020\</RevitInstallDir>
+    <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit $(RevitVersion)\</RevitInstallDir>
     <HasLocalRevit Condition="Exists('$(RevitInstallDir)RevitAPI.dll')">true</HasLocalRevit>
-    <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\2020\</RevitAddinsDir>
+    <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\$(RevitVersion)\</RevitAddinsDir>
+    <RevitApiPackageVersion>$(RevitVersion).*</RevitApiPackageVersion>
   </PropertyGroup>
 
-  <!-- Local build: use the DLLs from your Revit 2020 install -->
+  <!-- Prefer the exact installed Revit API when building on a workstation with that version installed. -->
   <ItemGroup Condition="'$(HasLocalRevit)' == 'true'">
     <Reference Include="RevitAPI">
       <HintPath>$(RevitInstallDir)RevitAPI.dll</HintPath>
@@ -26,19 +31,20 @@
     </Reference>
   </ItemGroup>
 
-  <!-- CI / machines without Revit: use the Revit API NuGet packages -->
+  <!-- CI builds resolve the API matching RevitVersion from NuGet. -->
   <ItemGroup Condition="'$(HasLocalRevit)' != 'true'">
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2020.*" ExcludeAssets="runtime" />
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2020.*" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitApiPackageVersion)" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitApiPackageVersion)" ExcludeAssets="runtime" />
   </ItemGroup>
 
-  <!-- Debug builds copy the add-in into Revit's Addins\2020 folder (close Revit first) -->
-  <Target Name="DeployToRevit" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+  <!-- Opt-in local deployment only; Release/CI builds never install files on the runner. -->
+  <Target Name="DeployToRevit" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(DeployToRevit)' == 'true'">
     <ItemGroup>
       <_AddinFiles Include="$(OutDir)**\*.dll;$(OutDir)**\*.pdb" />
     </ItemGroup>
-    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" ContinueOnError="true" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" ContinueOnError="true" />
+    <MakeDir Directories="$(RevitAddinsDir)ElecKit" />
+    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\RevitVersions\$(RevitVersion)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" />
   </Target>
 
 </Project>
