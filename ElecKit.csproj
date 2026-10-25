@@ -16,6 +16,9 @@
     <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit $(RevitVersion)\</RevitInstallDir>
     <HasLocalRevit Condition="Exists('$(RevitInstallDir)RevitAPI.dll')">true</HasLocalRevit>
     <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\$(RevitVersion)\</RevitAddinsDir>
+    <!-- Build directly into the selected version folder beside its manifest. -->
+    <OutputPath>$(MSBuildProjectDirectory)\RevitVersions\$(RevitVersion)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <RevitApiPackageVersion>$(RevitVersion).*</RevitApiPackageVersion>
   </PropertyGroup>
 
@@ -42,8 +45,8 @@
     <ItemGroup>
       <_AddinFiles Include="$(OutDir)**\*.dll;$(OutDir)**\*.pdb" />
     </ItemGroup>
-    <MakeDir Directories="$(RevitAddinsDir)ElecKit" />
-    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" />
+    <MakeDir Directories="$(RevitAddinsDir)" />
+    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)" />
     <Copy SourceFiles="$(MSBuildProjectDirectory)\RevitVersions\$(RevitVersion)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" />
   </Target>
 
