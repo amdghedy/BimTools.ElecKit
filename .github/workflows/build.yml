@@ -1,16 +1,62 @@
-name: Build
-on: [push, pull_request]
+name: Build and package Revit versions
+
+on:
+  push:
+    branches: [main, feature/revit-2020-2027-packages]
+  pull_request:
+  workflow_dispatch:
+
 jobs:
   build:
+    name: Revit ${{ matrix.revit }}
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        revit: ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027']
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+
+      - name: Install .NET SDKs
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
-      - name: Build
-        run: dotnet build ElecKit.csproj -c Release
-      - uses: actions/upload-artifact@v4
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build version-specific assembly
+        shell: pwsh
+        run: dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=${{ matrix.revit }}
+
+      - name: Stage versioned package
+        shell: pwsh
+        run: |
+          $version = "${{ matrix.revit }}"
+          $framework = switch ($version) {
+            '2020' { 'net47' }
+            { $_ -in '2021','2022','2023','2024' } { 'net48' }
+            { $_ -in '2025','2026' } { 'net8.0-windows' }
+            '2027' { 'net10.0-windows' }
+          }
+          $source = Join-Path $PWD "bin/Release/$framework"
+          $destination = Join-Path $PWD "artifacts/RevitVersions/$version"
+          if (!(Test-Path (Join-Path $source 'ElecKit.dll'))) {
+            throw "Build output ElecKit.dll not found at $source"
+          }
+          New-Item -ItemType Directory -Path $destination -Force | Out-Null
+          Copy-Item (Join-Path $source 'ElecKit.dll') $destination
+          Copy-Item "RevitVersions/$version/ElecKit.addin" $destination
+          Copy-Item "RevitVersions/$version/README.md" $destination
+          @"
+          ElecKit package for Revit $version
+          Built from commit: ${{ github.sha }}
+          API package/build target: Revit $version
+          "@ | Set-Content (Join-Path $destination 'BUILD-INFO.txt')
+
+      - name: Upload installable package
+        uses: actions/upload-artifact@v4
         with:
-          name: ElecKit-Release
-          path: bin/Release/net47/**
+          name: ElecKit-Revit-${{ matrix.revit }}
+          path: artifacts/RevitVersions/${{ matrix.revit }}/*
+          if-no-files-found: error
+          retention-days: 30
