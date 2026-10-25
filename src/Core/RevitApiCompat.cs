@@ -14,6 +14,11 @@ namespace ElecKit.Core
 #endif
         }
 
+        public static long WorksetIdValue(WorksetId id)
+        {
+            return id.IntegerValue;
+        }
+
         public static ElementId CreateElementId(long value)
         {
 #if REVIT2026_OR_GREATER
