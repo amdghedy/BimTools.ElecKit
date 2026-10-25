@@ -29,11 +29,11 @@ namespace ElecKit.Commands
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
 
             var elements = new List<Element>();
-            var seen = new HashSet<int>();
+            var seen = new HashSet<long>();
             foreach (Reference reference in picked)
             {
                 Element e = ctx.Doc.GetElement(reference);
-                if (e != null && !(e is ElementType) && seen.Add(e.Id.IntegerValue)) elements.Add(e);
+                if (e != null && !(e is ElementType) && seen.Add(RevitApiCompat.ElementIdValue(e.Id))) elements.Add(e);
             }
             if (elements.Count == 0)
             {
@@ -52,7 +52,7 @@ namespace ElecKit.Commands
             }
 
             var labels = new List<string>();
-            foreach (Workset workset in worksets) labels.Add(workset.Name + " (ID " + workset.Id.IntegerValue + ")");
+            foreach (Workset workset in worksets) labels.Add(workset.Name + " (ID " + RevitApiCompat.ElementIdValue(workset.Id) + ")");
             int chosen = Dialogs.Choose("Assign Workset",
                 "Selected elements: " + elements.Count + "\nChoose the destination user workset. Elements that cannot be changed will be reported.",
                 labels, 0);
@@ -71,14 +71,14 @@ namespace ElecKit.Commands
                         if (p == null || p.IsReadOnly || p.StorageType != StorageType.ElementId)
                         {
                             failed++;
-                            if (failures.Count < 10) failures.Add(e.Id.IntegerValue + ": workset parameter unavailable/read-only");
+                            if (failures.Count < 10) failures.Add(RevitApiCompat.ElementIdValue(e.Id) + ": workset parameter unavailable/read-only");
                             continue;
                         }
-                        if (p.AsElementId().IntegerValue == target.Id.IntegerValue) { unchanged++; continue; }
-                        if (!p.Set(new ElementId(target.Id.IntegerValue)))
+                        if (RevitApiCompat.ElementIdValue(p.AsElementId()) == RevitApiCompat.ElementIdValue(target.Id)) { unchanged++; continue; }
+                        if (!p.Set(RevitApiCompat.CreateElementId(RevitApiCompat.ElementIdValue(target.Id))))
                         {
                             failed++;
-                            if (failures.Count < 10) failures.Add(e.Id.IntegerValue + ": Revit rejected assignment");
+                            if (failures.Count < 10) failures.Add(RevitApiCompat.ElementIdValue(e.Id) + ": Revit rejected assignment");
                             continue;
                         }
                         changed++;
@@ -87,7 +87,7 @@ namespace ElecKit.Commands
                     {
                         failed++;
                         Log.Error(ex);
-                        if (failures.Count < 10) failures.Add(e.Id.IntegerValue + ": " + ex.Message);
+                        if (failures.Count < 10) failures.Add(RevitApiCompat.ElementIdValue(e.Id) + ": " + ex.Message);
                     }
                 }
             });
