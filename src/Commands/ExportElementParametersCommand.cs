@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -42,7 +42,7 @@ namespace ElecKit.Commands
             foreach (Reference reference in picked)
             {
                 Element e = ctx.Doc.GetElement(reference);
-                if (e != null && seen.Add(e.Id.IntegerValue)) elements.Add(e);
+                if (e != null && seen.Add(e.Id.Val())) elements.Add(e);
             }
             if (elements.Count == 0)
             {
@@ -107,12 +107,12 @@ namespace ElecKit.Commands
             foreach (Column column in columns) csv.Append(",").Append(Csv.Escape(column.Name));
             csv.AppendLine();
 
-            foreach (Element e in elements.OrderBy(x => x.Id.IntegerValue))
+            foreach (Element e in elements.OrderBy(x => x.Id.Val()))
             {
                 Parameter markParameter = e.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
                 string mark = markParameter != null && markParameter.StorageType == StorageType.String
                     ? markParameter.AsString() : "";
-                csv.Append(e.Id.IntegerValue.ToString(CultureInfo.InvariantCulture))
+                csv.Append(e.Id.Val().ToString(CultureInfo.InvariantCulture))
                     .Append(",").Append(Csv.Escape(mark));
                 foreach (Column column in columns)
                 {
@@ -125,7 +125,7 @@ namespace ElecKit.Commands
                             value = p.AsInteger().ToString(CultureInfo.InvariantCulture);
                         else if (p.StorageType == StorageType.Double)
                             value = p.AsValueString() ?? "";
-                        else if (p.StorageType == StorageType.ElementId) value = p.AsElementId().IntegerValue.ToString(CultureInfo.InvariantCulture);
+                        else if (p.StorageType == StorageType.ElementId) value = p.AsElementId().Val().ToString(CultureInfo.InvariantCulture);
                     }
                     csv.Append(",").Append(Csv.Escape(value));
                 }

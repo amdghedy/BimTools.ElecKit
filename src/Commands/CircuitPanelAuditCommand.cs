@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -27,7 +27,7 @@ namespace ElecKit.Commands
                 FamilyInstance assigned = null;
                 try { assigned = system.BaseEquipment; } catch { }
                 if (assigned == null) continue;
-                long panelId = assigned.Id.IntegerValue;
+                long panelId = assigned.Id.Val();
                 double? load = ReadApparentLoadVa(system);
                 if (!panelLoadTotals.ContainsKey(panelId))
                 {
@@ -65,9 +65,9 @@ namespace ElecKit.Commands
                     loadVa = loadParameter.AsDouble();
                 double? capacityVa = panel == null ? null : ReadCapacityVa(panel);
                 double? existingPanelLoadVa = null;
-                if (panel != null && loadVa.HasValue && panelLoadComplete.ContainsKey(panel.Id.IntegerValue) &&
-                    panelLoadComplete[panel.Id.IntegerValue])
-                    existingPanelLoadVa = Math.Max(0.0, panelLoadTotals[panel.Id.IntegerValue] - loadVa.Value);
+                if (panel != null && loadVa.HasValue && panelLoadComplete.ContainsKey(panel.Id.Val()) &&
+                    panelLoadComplete[panel.Id.Val()])
+                    existingPanelLoadVa = Math.Max(0.0, panelLoadTotals[panel.Id.Val()] - loadVa.Value);
                 CircuitPanelCheck check = CircuitPanelValidation.Evaluate(
                     circuitVoltage, panelVoltage, circuitPoles, panelPoles, loadVa, capacityVa, existingPanelLoadVa);
                 if (check.Errors.Count > 0) errors++;
@@ -75,7 +75,7 @@ namespace ElecKit.Commands
                 string findings = string.Join(" | ", check.Errors.Concat(check.Warnings));
                 rows.AppendLine(string.Join(",", new[]
                 {
-                    Csv.Escape(system.Id.IntegerValue.ToString(CultureInfo.InvariantCulture)),
+                    Csv.Escape(system.Id.Val().ToString(CultureInfo.InvariantCulture)),
                     Csv.Escape(system.PanelName), Csv.Escape(system.CircuitNumber), Csv.Escape(system.LoadName),
                     Csv.Escape(SafeElementCount(system).ToString(CultureInfo.InvariantCulture)),
                     Csv.Escape(Format(circuitVoltage)), Csv.Escape(Format(panelVoltage)),

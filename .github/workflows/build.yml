@@ -1,18 +1,119 @@
 name: Build
-on: [push, pull_request]
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
 jobs:
+  # One build per Revit version. A version that fails does not stop the others.
   build:
+    name: Revit ${{ matrix.revit }}
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        revit: [2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
       - name: Build
-        run: dotnet build ElecKit.csproj -c Release
-      - name: Test Revit-independent logic
-        run: dotnet test tests/ElecKit.Tests/ElecKit.Tests.csproj -c Release
+        run: dotnet build ElecKit.csproj -c Release -p:RevitVersion=${{ matrix.revit }}
       - uses: actions/upload-artifact@v4
         with:
-          name: ElecKit-Release
-          path: bin/Release/net47/**
+          name: ElecKit-R${{ matrix.revit }}
+          path: bin/Release/R${{ matrix.revit }}/
+          if-no-files-found: error
+
+  # Run the unit tests independently of the Revit-version build matrix.
+  test:
+    name: Unit tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run tests
+        run: dotnet test tests/ElecKit.Tests/ElecKit.Tests.csproj -c Release
+  # Only package when every Revit build and the unit tests pass.
+  installer:
+    name: Setup .exe
+    needs: [build, test]
+    if: ${{ needs.build.result == 'success' && needs.test.result == 'success' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ElecKit-R*
+          path: built
+      - name: Pack all Revit versions into one payload
+        shell: pwsh
+        run: |
+          $payload = 'installer/payload'
+          New-Item -ItemType Directory -Force $payload | Out-Null
+          $versions = @(Get-ChildItem built -Directory)
+          if ($versions.Count -eq 0) { throw 'No successful Revit build to package.' }
+          $expectedArtifacts = @('ElecKit-R2020','ElecKit-R2021','ElecKit-R2022','ElecKit-R2023','ElecKit-R2024','ElecKit-R2025','ElecKit-R2026')
+          $actualArtifacts = @($versions | ForEach-Object { $_.Name } | Sort-Object)
+          $missing = @($expectedArtifacts | Where-Object { $_ -notin $actualArtifacts })
+          $unexpected = @($actualArtifacts | Where-Object { $_ -notin $expectedArtifacts })
+          if ($missing.Count -gt 0 -or $unexpected.Count -gt 0) {
+            throw ('Artifact mismatch. Missing: ' + ($missing -join ', ') + '; unexpected: ' + ($unexpected -join ', '))
+          }
+          Write-Host ('Verified all seven Revit artifacts: ' + ($actualArtifacts -join ', '))
+          foreach ($dir in $versions) {
+            $year = $dir.Name -replace '^ElecKit-R', ''
+            $target = Join-Path $payload $year
+            New-Item -ItemType Directory -Force $target | Out-Null
+            Copy-Item (Join-Path $dir.FullName '*') $target -Recurse
+          }
+          Copy-Item ElecKit.addin $payload
+          Compress-Archive -Path "$payload/*" -DestinationPath installer/payload.zip -Force
+          Write-Host ('Packed Revit versions: ' + (($versions | ForEach-Object { $_.Name }) -join ', '))
+      - name: Build setup
+        run: dotnet build installer/ElecKit.Installer.csproj -c Release
+      - name: Collect the setup file
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $exe = Get-ChildItem installer/bin -Recurse -Filter ElecKit-Setup.exe | Select-Object -First 1
+          if (-not $exe) { throw 'ElecKit-Setup.exe was not built.' }
+          Copy-Item $exe.FullName dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElecKit-Setup
+          path: dist/ElecKit-Setup.exe
+          if-no-files-found: error
+
+  # Pushing a tag such as v1.0.0 publishes the setup .exe as a GitHub release.
+  release:
+    name: Publish release
+    needs: installer
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ElecKit-Setup
+          path: dist
+      - name: Create or update the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $repo = '${{ github.repository }}'
+          gh release view $tag --repo $repo 2>$null
+          if ($LASTEXITCODE -ne 0) { gh release create $tag --repo $repo --title "ElecKit $tag" --generate-notes }
+          gh release upload $tag dist/ElecKit-Setup.exe --clobber --repo $repo

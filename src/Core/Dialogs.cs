@@ -25,6 +25,67 @@ namespace ElecKit.Core
             return Show(title, prompt, combo, combo) ? combo.SelectedIndex : -1;
         }
 
+        /// <summary>Opens a standard file picker. Returns the chosen path or null.</summary>
+        public static string PickFile(string title, string filter)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.Title = title;
+            dialog.Filter = filter;
+            dialog.CheckFileExists = true;
+            return dialog.ShowDialog() == true ? dialog.FileName : null;
+        }
+
+        /// <summary>Shows read-only text (a report) in a scrollable window with a Copy button.</summary>
+        public static void ShowText(string title, string text)
+        {
+            var box = new TextBox
+            {
+                Text = text,
+                IsReadOnly = true,
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.NoWrap,
+                FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+
+            var window = new Window
+            {
+                Title = title,
+                Width = 780,
+                Height = 500,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = false,
+                Topmost = true
+            };
+
+            var copy = new Button { Content = "Copy", Width = 80, Margin = new Thickness(0, 0, 8, 0) };
+            var close = new Button { Content = "Close", Width = 80, IsDefault = true, IsCancel = true };
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+            buttons.Children.Add(copy);
+            buttons.Children.Add(close);
+
+            var layout = new DockPanel { Margin = new Thickness(12) };
+            DockPanel.SetDock(buttons, Dock.Bottom);
+            layout.Children.Add(buttons);
+            layout.Children.Add(box);
+            window.Content = layout;
+
+            copy.Click += (s, e) =>
+            {
+                try { Clipboard.SetText(text); } catch { }
+            };
+            close.Click += (s, e) => window.Close();
+
+            new WindowInteropHelper(window).Owner = Process.GetCurrentProcess().MainWindowHandle;
+            window.ShowDialog();
+        }
+
         private static bool Show(string title, string prompt, Control input, Control focus)
         {
             var window = new Window

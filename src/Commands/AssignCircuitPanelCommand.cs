@@ -20,7 +20,7 @@ namespace ElecKit.Commands
             {
                 return element is FamilyInstance
                     && element.Category != null
-                    && element.Category.Id.IntegerValue == (int)BuiltInCategory.OST_ElectricalEquipment;
+                    && element.Category.Id.Val() == (int)BuiltInCategory.OST_ElectricalEquipment;
             }
 
             public bool AllowReference(Reference reference, XYZ position) { return false; }
@@ -146,7 +146,7 @@ namespace ElecKit.Commands
                 var choices = systems.Select(s =>
                     "Circuit " + (s.CircuitNumber ?? "(unnumbered)") +
                     " | Panel: " + (string.IsNullOrEmpty(s.PanelName) ? "(unassigned)" : s.PanelName) +
-                    " | System ID: " + s.Id.IntegerValue).ToList();
+                    " | System ID: " + s.Id.Val()).ToList();
                 int choice = Dialogs.Choose("Assign Circuit Panel",
                     "The picked element belongs to more than one circuit. Choose the circuit to change.",
                     choices, 0);

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Electrical;
-using Autodesk.Revit.Exceptions;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using ElecKit.Core;
@@ -14,24 +13,12 @@ namespace ElecKit.Commands
     {
         protected override Result Run(ToolContext ctx, ref string message)
         {
-            Reference picked;
-            try
-            {
-                picked = ctx.UiDoc.Selection.PickObject(
-                    ObjectType.Element, "Pick an element that is on a circuit");
-            }
-            catch (OperationCanceledException) { return Result.Cancelled; }
-
-            Element selected = picked == null ? null : ctx.Doc.GetElement(picked);
-            if (selected == null)
-            {
-                TaskDialog.Show("Select by Circuit", "The selected element is no longer available. Run the command again.");
-                return Result.Cancelled;
-            }
-            long pickedId = selected.Id.IntegerValue;
+            Reference picked = ctx.UiDoc.Selection.PickObject(
+                ObjectType.Element, "Pick an element that is on a circuit");
+            int pickedId = ctx.Doc.GetElement(picked).Id.Val();
 
             var ids = new List<ElementId>();
-            var seen = new HashSet<long>();
+            var seen = new HashSet<int>();
             bool onCircuit = false;
 
             foreach (Element item in new FilteredElementCollector(ctx.Doc).OfClass(typeof(ElectricalSystem)))
@@ -42,14 +29,14 @@ namespace ElecKit.Commands
                 bool contains = false;
                 foreach (Element member in system.Elements)
                 {
-                    if (member.Id.IntegerValue == pickedId) { contains = true; break; }
+                    if (member.Id.Val() == pickedId) { contains = true; break; }
                 }
                 if (!contains) continue;
 
                 onCircuit = true;
                 foreach (Element member in system.Elements)
                 {
-                    if (seen.Add(member.Id.IntegerValue)) ids.Add(member.Id);
+                    if (seen.Add(member.Id.Val())) ids.Add(member.Id);
                 }
             }
 

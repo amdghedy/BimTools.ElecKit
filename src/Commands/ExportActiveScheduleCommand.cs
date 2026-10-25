@@ -26,7 +26,7 @@ namespace ElecKit.Commands
 
             string path = Path.Combine(folder, fileName);
             TaskDialog.Show("Export Active Schedule", "Saved to:\n" + path);
-            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(path);
+            if (!ElecSettings.Current.DoNotOpenReports) Shell.Open(path);
             return Result.Succeeded;
         }
     }

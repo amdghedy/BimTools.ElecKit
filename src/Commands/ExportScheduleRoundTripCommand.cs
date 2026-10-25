@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -81,7 +81,7 @@ namespace ElecKit.Commands
                     return Result.Cancelled;
                 }
                 if (parameterId == null || parameterId == ElementId.InvalidElementId ||
-                    !seenParameterIds.Add((int)parameterId.IntegerValue))
+                    !seenParameterIds.Add((int)parameterId.Val()))
                 {
                     TaskDialog.Show("Export Schedule Round-Trip",
                         "The schedule contains an invalid or repeated parameter field ('" + field.GetName() +
@@ -90,7 +90,7 @@ namespace ElecKit.Commands
                 }
                 columns.Add(new Column
                 {
-                    ParameterId = (int)parameterId.IntegerValue,
+                    ParameterId = (int)parameterId.Val(),
                     Name = field.GetName(),
                     IsTypeParameter = fieldType == ScheduleFieldType.ElementType
                 });
@@ -121,7 +121,7 @@ namespace ElecKit.Commands
                 foreach (Element element in elements)
                 {
                     if (element.Category == null ||
-                        element.Category.Id.IntegerValue != schedule.Definition.CategoryId.IntegerValue)
+                        element.Category.Id.Val() != schedule.Definition.CategoryId.Val())
                         continue;
                     if (MatchesScheduleFilters(ctx.Doc, schedule, element))
                         scheduleElements.Add(element);
@@ -134,7 +134,7 @@ namespace ElecKit.Commands
                     "A schedule filter uses a field or comparison this round-trip exporter cannot safely evaluate. No CSV was written.\\n\\n" + ex.Message);
                 return Result.Failed;
             }
-            elements = scheduleElements.OrderBy(e => e.Id.IntegerValue).ToList();
+            elements = scheduleElements.OrderBy(e => e.Id.Val()).ToList();
             if (elements.Count == 0)
             {
                 TaskDialog.Show("Export Schedule Round-Trip",
@@ -181,7 +181,7 @@ namespace ElecKit.Commands
 
             foreach (Element element in elements)
             {
-                csv.Append(element.Id.IntegerValue.ToString(CultureInfo.InvariantCulture));
+                csv.Append(element.Id.Val().ToString(CultureInfo.InvariantCulture));
                 foreach (Column column in columns)
                 {
                     Element parameterOwner = column.IsTypeParameter
@@ -203,7 +203,7 @@ namespace ElecKit.Commands
                                 value = parameter.AsDouble().ToString("R", CultureInfo.InvariantCulture);
                                 break;
                             case StorageType.ElementId:
-                                value = parameter.AsElementId().IntegerValue.ToString(CultureInfo.InvariantCulture);
+                                value = parameter.AsElementId().Val().ToString(CultureInfo.InvariantCulture);
                                 break;
                         }
                     }
@@ -337,8 +337,8 @@ namespace ElecKit.Commands
         {
             if (owner == null || parameterId == null || parameterId == ElementId.InvalidElementId)
                 return null;
-            if (parameterId.IntegerValue < 0)
-                return owner.get_Parameter((BuiltInParameter)parameterId.IntegerValue);
+            if (parameterId.Val() < 0)
+                return owner.get_Parameter((BuiltInParameter)parameterId.Val());
             ParameterElement parameterElement = doc.GetElement(parameterId) as ParameterElement;
             return parameterElement == null ? null : owner.get_Parameter(parameterElement.GetDefinition());
         }

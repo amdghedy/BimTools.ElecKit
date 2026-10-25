@@ -87,21 +87,22 @@ namespace ElecKit.Commands
                                 XYZ corner = shape == 1 ? new XYZ(b.X, a.Y, z) : new XYZ(a.X, b.Y, z);
                                 Conduit first = Conduit.Create(ctx.Doc, type.Id, a, corner, level.Id);
                                 Conduit second = Conduit.Create(ctx.Doc, type.Id, corner, b, level.Id);
-                                Connector c1 = Nearest(first, corner);
-                                Connector c2 = Nearest(second, corner);
-                                if (c1 == null || c2 == null)
-                                    throw new InvalidOperationException("Revit did not expose connectors at the L-turn; this route pair was rolled back.");
+                                conduits += 2;
+
                                 try
                                 {
-                                    ctx.Doc.Create.NewElbowFitting(c1, c2);
-                                    conduits += 2;
-                                    elbows++;
+                                    Connector c1 = Nearest(first, corner);
+                                    Connector c2 = Nearest(second, corner);
+                                    if (c1 != null && c2 != null)
+                                    {
+                                        ctx.Doc.Create.NewElbowFitting(c1, c2);
+                                        elbows++;
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
-                                    elbowsFailed++;
                                     Log.Error(ex);
-                                    throw new InvalidOperationException("Required elbow fitting failed; this route pair was rolled back.", ex);
+                                    elbowsFailed++;
                                 }
                             }
                             sub.Commit();

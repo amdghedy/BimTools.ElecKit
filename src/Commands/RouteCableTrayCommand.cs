@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.Attributes;
@@ -192,7 +192,7 @@ namespace ElecKit.Commands
         private static Result RouteAroundObstacles(ToolContext ctx, ViewPlan plan, IList<XYZ> points,
             IList<Reference> picked, CableTrayType trayType, Level level, double clearanceFeet)
         {
-            var excluded = new HashSet<long>(picked.Select(r => (long)r.ElementId.IntegerValue));
+            var excluded = new HashSet<long>(picked.Select(r => (long)r.ElementId.Val()));
             double minX = points.Min(p => p.X) - UnitConv.MmToFeet(5000);
             double maxX = points.Max(p => p.X) + UnitConv.MmToFeet(5000);
             double minY = points.Min(p => p.Y) - UnitConv.MmToFeet(5000);
@@ -213,7 +213,7 @@ namespace ElecKit.Commands
             {
                 foreach (Element e in new FilteredElementCollector(ctx.Doc, plan.Id).OfCategory(category).WhereElementIsNotElementType())
                 {
-                    if (excluded.Contains(e.Id.IntegerValue)) continue;
+                    if (excluded.Contains(e.Id.Val())) continue;
                     BoundingBoxXYZ box;
                     try { box = e.get_BoundingBox(plan); } catch { continue; }
                     if (box == null) continue;

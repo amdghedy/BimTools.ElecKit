@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -22,7 +22,7 @@ namespace ElecKit.Commands
             public bool AllowElement(Element element)
             {
                 return element is FamilyInstance && element.Category != null &&
-                    element.Category.Id.IntegerValue == (int)BuiltInCategory.OST_ElectricalEquipment;
+                    element.Category.Id.Val() == (int)BuiltInCategory.OST_ElectricalEquipment;
             }
             public bool AllowReference(Reference reference, XYZ position) { return false; }
         }

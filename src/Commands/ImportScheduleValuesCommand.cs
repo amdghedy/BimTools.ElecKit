@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -134,7 +134,7 @@ namespace ElecKit.Commands
                     {
                         List<Element> markMatches;
                         if (!markMap.TryGetValue(rowMark, out markMatches) ||
-                            markMatches.Count != 1 || markMatches[0].Id.IntegerValue != el.Id.IntegerValue)
+                            markMatches.Count != 1 || markMatches[0].Id.Val() != el.Id.Val())
                         {
                             skipped++;
                             if (issues.Count < 50)

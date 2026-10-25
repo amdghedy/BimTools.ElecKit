@@ -46,7 +46,7 @@ namespace ElecKit.Commands
             File.WriteAllText(file, sb.ToString(), new UTF8Encoding(true));
 
             TaskDialog.Show("Circuit Report", systems.Count + " circuits exported to:\n" + file);
-            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(file);
+            if (!ElecSettings.Current.DoNotOpenReports) Shell.Open(file);
             return Result.Succeeded;
         }
     }

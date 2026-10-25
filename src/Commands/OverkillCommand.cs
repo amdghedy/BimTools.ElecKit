@@ -8,9 +8,9 @@ using ElecKit.Core;
 namespace ElecKit.Commands
 {
     /// <summary>
-    /// Removes duplicate detail lines and shorter detail lines fully contained by a longer,
-    /// collinear detail line with the same line style. Partial overlaps are preserved.
-    /// Works on the current selection, or the whole active view if nothing is selected.
+    /// Deletes detail lines that duplicate, or lie completely on top of, a longer detail line
+    /// with the same line style. Works on the current selection, or the whole active view if
+    /// nothing is selected.
     /// </summary>
     [Transaction(TransactionMode.Manual)]
     public class OverkillCommand : ElecCommand
@@ -63,11 +63,9 @@ namespace ElecKit.Commands
                 for (int j = i + 1; j < items.Count; j++)
                 {
                     if (removed.Contains(j) || items[j].Style != items[i].Style) continue;
-
-                    // Only delete a line when its complete finite segment is contained by
-                    // the retained line. Distance-to-line alone is unsafe: it also accepts
-                    // collinear segments located far beyond either endpoint.
-                    if (IsFullyContained(keep, items[j].Line))
+                    Line other = items[j].Line;
+                    if (keep.Distance(other.GetEndPoint(0)) < ToleranceFeet &&
+                        keep.Distance(other.GetEndPoint(1)) < ToleranceFeet)
                     {
                         removed.Add(j);
                         toDelete.Add(items[j].Id);
@@ -77,43 +75,19 @@ namespace ElecKit.Commands
 
             if (toDelete.Count == 0)
             {
-                TaskDialog.Show("Clean Duplicate Lines", "No duplicate or fully contained detail lines were found.");
+                TaskDialog.Show("Clean Duplicate Lines", "No duplicate or overlapping detail lines were found.");
                 return Result.Succeeded;
             }
 
             ctx.Transact("Clean duplicate lines", () => ctx.Doc.Delete(toDelete));
-            TaskDialog.Show("Clean Duplicate Lines", toDelete.Count + " duplicate/contained detail line(s) deleted.");
+            TaskDialog.Show("Clean Duplicate Lines", toDelete.Count + " duplicate/overlapping detail line(s) deleted.");
             return Result.Succeeded;
         }
 
-        private static bool IsFullyContained(Line container, Line candidate)
-        {
-            if (container == null || candidate == null || !container.IsBound || !candidate.IsBound)
-                return false;
-
-            XYZ start = container.GetEndPoint(0);
-            XYZ direction = container.Direction;
-            double length = container.Length;
-            XYZ candidateStart = candidate.GetEndPoint(0);
-            XYZ candidateEnd = candidate.GetEndPoint(1);
-
-            if (container.Distance(candidateStart) > ToleranceFeet ||
-                container.Distance(candidateEnd) > ToleranceFeet)
-                return false;
-
-            double startProjection = (candidateStart - start).DotProduct(direction);
-            double endProjection = (candidateEnd - start).DotProduct(direction);
-
-            return startProjection >= -ToleranceFeet &&
-                   endProjection >= -ToleranceFeet &&
-                   startProjection <= length + ToleranceFeet &&
-                   endProjection <= length + ToleranceFeet;
-        }
-
-        private static long StyleKey(CurveElement c)
+        private static int StyleKey(CurveElement c)
         {
             Element style = c.LineStyle;
-            return style == null ? -1 : style.Id.IntegerValue;
+            return style == null ? -1 : style.Id.Val();
         }
     }
 }

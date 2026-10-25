@@ -33,7 +33,7 @@ namespace ElecKit.Commands
             foreach (Reference reference in picked)
             {
                 Element e = ctx.Doc.GetElement(reference);
-                if (e != null && !(e is ElementType) && seen.Add(e.Id.IntegerValue)) elements.Add(e);
+                if (e != null && !(e is ElementType) && seen.Add(e.Id.Val())) elements.Add(e);
             }
             if (elements.Count == 0)
             {
@@ -71,14 +71,14 @@ namespace ElecKit.Commands
                         if (p == null || p.IsReadOnly || p.StorageType != StorageType.ElementId)
                         {
                             failed++;
-                            if (failures.Count < 10) failures.Add(e.Id.IntegerValue + ": workset parameter unavailable/read-only");
+                            if (failures.Count < 10) failures.Add(e.Id.Val() + ": workset parameter unavailable/read-only");
                             continue;
                         }
-                        if (p.AsElementId().IntegerValue == target.Id.IntegerValue) { unchanged++; continue; }
+                        if (p.AsElementId().Val() == target.Id.IntegerValue) { unchanged++; continue; }
                         if (!p.Set(new ElementId(target.Id.IntegerValue)))
                         {
                             failed++;
-                            if (failures.Count < 10) failures.Add(e.Id.IntegerValue + ": Revit rejected assignment");
+                            if (failures.Count < 10) failures.Add(e.Id.Val() + ": Revit rejected assignment");
                             continue;
                         }
                         changed++;
@@ -87,7 +87,7 @@ namespace ElecKit.Commands
                     {
                         failed++;
                         Log.Error(ex);
-                        if (failures.Count < 10) failures.Add(e.Id.IntegerValue + ": " + ex.Message);
+                        if (failures.Count < 10) failures.Add(e.Id.Val() + ": " + ex.Message);
                     }
                 }
             });

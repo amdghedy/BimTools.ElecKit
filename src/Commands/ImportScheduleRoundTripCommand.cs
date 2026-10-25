@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -152,7 +152,7 @@ namespace ElecKit.Commands
                 {
                     string raw = cells[column.CsvIndex];
                     if (string.IsNullOrEmpty(raw)) continue;
-                    string key = type.Id.IntegerValue.ToString(CultureInfo.InvariantCulture) + ":" +
+                    string key = type.Id.Val().ToString(CultureInfo.InvariantCulture) + ":" +
                         column.ParameterId.ToString(CultureInfo.InvariantCulture);
                     string existing;
                     if (typeValues.TryGetValue(key, out existing) &&
@@ -160,7 +160,7 @@ namespace ElecKit.Commands
                     {
                         TaskDialog.Show("Import Schedule Round-Trip",
                             "Conflicting values for type parameter '" + column.Name + "' on type ElementId " +
-                            type.Id.IntegerValue + ". Instances sharing one type must have the same value. No values were imported.");
+                            type.Id.Val() + ". Instances sharing one type must have the same value. No values were imported.");
                         return Result.Cancelled;
                     }
                     typeValues[key] = raw;
@@ -210,7 +210,7 @@ namespace ElecKit.Commands
                             ? null
                             : ResolveParameter(ctx.Doc, parameterOwner, new ElementId(column.ParameterId));
                         string typeParameterKey = column.IsTypeParameter && parameterOwner != null
-                            ? parameterOwner.Id.IntegerValue.ToString(CultureInfo.InvariantCulture) + ":" +
+                            ? parameterOwner.Id.Val().ToString(CultureInfo.InvariantCulture) + ":" +
                                 column.ParameterId.ToString(CultureInfo.InvariantCulture)
                             : null;
                         if (column.IsTypeParameter && typeParameterKey != null &&
@@ -285,8 +285,8 @@ namespace ElecKit.Commands
         {
             if (owner == null || parameterId == null || parameterId == ElementId.InvalidElementId)
                 return null;
-            if (parameterId.IntegerValue < 0)
-                return owner.get_Parameter((BuiltInParameter)parameterId.IntegerValue);
+            if (parameterId.Val() < 0)
+                return owner.get_Parameter((BuiltInParameter)parameterId.Val());
             ParameterElement parameterElement = doc.GetElement(parameterId) as ParameterElement;
             return parameterElement == null ? null : owner.get_Parameter(parameterElement.GetDefinition());
         }

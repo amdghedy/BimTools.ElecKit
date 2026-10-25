@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Revit.Attributes;
@@ -103,7 +103,7 @@ namespace ElecKit.Commands
                         {
                             if (sub.GetStatus() == TransactionStatus.Started) sub.RollBack();
                             failed++;
-                            if (details.Count < 8) details.Add(source.Id.IntegerValue + ": " + ex.Message);
+                            if (details.Count < 8) details.Add(source.Id.Val() + ": " + ex.Message);
                             Log.Error(ex);
                         }
                     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -201,7 +201,7 @@ namespace ElecKit.Commands
                         {
                             Element = e, Box = ToAxisAlignedBox(box, Transform.Identity),
                             Category = LabelUtils.GetLabelFor(category), Source = doc.Title,
-                            ElementId = e.Id.IntegerValue.ToString(CultureInfo.InvariantCulture),
+                            ElementId = e.Id.Val().ToString(CultureInfo.InvariantCulture),
                             Solids = GetSolids(e, Transform.Identity), IsLinked = false
                         });
                         if (items.Count > MaxElements) return;
@@ -229,7 +229,7 @@ namespace ElecKit.Commands
                         {
                             Element = e, Box = hostBox, Category = LabelUtils.GetLabelFor(category),
                             Source = link.Name + " [" + linkedDoc.Title + "]",
-                            ElementId = e.Id.IntegerValue.ToString(CultureInfo.InvariantCulture),
+                            ElementId = e.Id.Val().ToString(CultureInfo.InvariantCulture),
                             Solids = GetSolids(e, transform), IsLinked = true
                         });
                         if (items.Count > MaxElements) return;

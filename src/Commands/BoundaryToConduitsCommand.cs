@@ -99,17 +99,15 @@ namespace ElecKit.Commands
                                 Tally(ConduitFittings.TryElbow(ctx.Doc, made[made.Count - 1], made[0], Lift(points[0], z)),
                                     ref runElbows, ref runElbowsFailed);
 
-                            elbowsFailed += runElbowsFailed;
-                            if (runElbowsFailed > 0)
-                                throw new InvalidOperationException("One or more required elbow fittings failed; the complete conduit run is being rolled back.");
                             sub.Commit();
                             runs++;
                             conduits += made.Count;
                             elbows += runElbows;
+                            elbowsFailed += runElbowsFailed;
                         }
                         catch (Exception ex)
                         {
-                            if (sub.GetStatus() == TransactionStatus.Started) sub.RollBack();
+                            sub.RollBack();
                             Log.Error(ex);
                             failedRuns++;
                         }
@@ -119,7 +117,6 @@ namespace ElecKit.Commands
 
             string text = runs + " run(s): " + conduits + " conduit(s) and " + elbows + " elbow(s) created (" + type.Name + ").";
             if (elbowsFailed > 0) text += "\n" + elbowsFailed + " corner(s) have no elbow: check the conduit type's routing preferences.";
-            if (elbowsFailed > 0) text += "\n" + elbowsFailed + " required elbow fitting(s) failed; affected runs were rolled back.";
             if (failedRuns > 0) text += "\n" + failedRuns + " run(s) failed and were undone (see log).";
             TaskDialog.Show("Boundary to Conduits", text);
             return Result.Succeeded;

@@ -52,7 +52,7 @@ namespace ElecKit.Commands
             if (failed.Count > 0) text += "\n\nSkipped (see log):\n" + string.Join("\n", failed);
             TaskDialog.Show("Export All Schedules", text);
 
-            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(folder);
+            if (!ElecSettings.Current.DoNotOpenReports) Shell.Open(folder);
             return Result.Succeeded;
         }
     }

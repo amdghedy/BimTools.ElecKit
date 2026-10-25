@@ -1,39 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-
+  <!--
+    Build for one Revit version:   dotnet build ElecKit.csproj -c Release -p:RevitVersion=2024
+    Supported: 2020 2021 2022 2023 2024 2025 2026   (default 2020)
+    Output:    bin\Release\R<version>\ElecKit.dll
+  -->
   <PropertyGroup>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2020</RevitVersion>
     <AssemblyName>ElecKit</AssemblyName>
     <RootNamespace>ElecKit</RootNamespace>
-    <RevitVersion Condition="'$(RevitVersion)' == ''">2020</RevitVersion>
     <PlatformTarget>x64</PlatformTarget>
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <LangVersion>10.0</LangVersion>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\$(Configuration)\R$(RevitVersion)\</OutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit $(RevitVersion)\</RevitInstallDir>
     <HasLocalRevit Condition="Exists('$(RevitInstallDir)RevitAPI.dll')">true</HasLocalRevit>
-    <HasLocalRevit Condition="'$(HasLocalRevit)' == ''">false</HasLocalRevit>
     <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\$(RevitVersion)\</RevitAddinsDir>
   </PropertyGroup>
-
+  <!-- .NET version per Revit version: 2020 = 4.7, 2021-2024 = 4.8, 2025+ = .NET 8 -->
   <PropertyGroup Condition="'$(RevitVersion)' == '2020'">
     <TargetFramework>net47</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RevitVersion)' == '2021' Or '$(RevitVersion)' == '2022' Or '$(RevitVersion)' == '2023' Or '$(RevitVersion)' == '2024'">
     <TargetFramework>net48</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026' Or '$(RevitVersion)' == '2027'">
-    <TargetFramework Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026'">net8.0-windows</TargetFramework>
-    <TargetFramework Condition="'$(RevitVersion)' == '2027'">net10.0-windows</TargetFramework>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026'">
+    <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
-
-  <Target Name="ValidateRevitVersion" BeforeTargets="PrepareForBuild"
-          Condition="'$(RevitVersion)' != '2020' And '$(RevitVersion)' != '2021' And '$(RevitVersion)' != '2022' And '$(RevitVersion)' != '2023' And '$(RevitVersion)' != '2024' And '$(RevitVersion)' != '2025' And '$(RevitVersion)' != '2026' And '$(RevitVersion)' != '2027'">
-    <Error Text="Unsupported RevitVersion '$(RevitVersion)'. Supported build targets are 2020-2027." />
-  </Target>
-
+  <!-- compile-time switches used in the code: REVIT2024, REVIT2022_OR_GREATER, REVIT2024_OR_GREATER -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);REVIT$(RevitVersion)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([System.Int32]::Parse('$(RevitVersion)')) &gt;= 2022">
+    <DefineConstants>$(DefineConstants);REVIT2022_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([System.Int32]::Parse('$(RevitVersion)')) &gt;= 2024">
+    <DefineConstants>$(DefineConstants);REVIT2024_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <!-- the installer project lives in a sub-folder and is not part of this assembly -->
   <ItemGroup>
-    <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="obj\**\*.cs" />
+    <Compile Remove="bin\**\*.cs" />
+    <Compile Remove="installer\**" />
+    <Compile Remove="tests\**\*.cs" />
+    <EmbeddedResource Remove="installer\**" />
+    <None Remove="installer\**" />
   </ItemGroup>
-
+  <!-- Local build: use the DLLs from your Revit install -->
   <ItemGroup Condition="'$(HasLocalRevit)' == 'true'">
     <Reference Include="RevitAPI">
       <HintPath>$(RevitInstallDir)RevitAPI.dll</HintPath>
@@ -44,20 +61,26 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
-
+  <!-- CI / machines without that Revit version: use the Revit API NuGet packages -->
   <ItemGroup Condition="'$(HasLocalRevit)' != 'true'">
     <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" ExcludeAssets="runtime" />
     <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" ExcludeAssets="runtime" />
   </ItemGroup>
-
-  <Target Name="DeployToRevit" AfterTargets="Build"
-          Condition="'$(Configuration)' == 'Debug' and '$(HasLocalRevit)' == 'true' and Exists('$(TargetPath)')">
-    <MakeDir Directories="$(RevitAddinsDir)ElecKit" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(RevitAddinsDir)ElecKit\ElecKit.dll" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" />
-    <Error Condition="!Exists('$(RevitAddinsDir)ElecKit.addin')" Text="ElecKit deployment failed: manifest was not copied to $(RevitAddinsDir)." />
-    <Error Condition="!Exists('$(RevitAddinsDir)ElecKit\ElecKit.dll')" Text="ElecKit deployment failed: DLL was not copied to $(RevitAddinsDir)ElecKit." />
-    <Message Importance="high" Text="ElecKit deployed for Revit $(RevitVersion) to $(RevitAddinsDir); close Revit before rebuilding/replacing a loaded assembly." />
+  <!-- .NET Framework only: framework assemblies the code uses (they are built in on .NET 8) -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net47' Or '$(TargetFramework)' == 'net48'">
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  <!-- Debug builds copy the add-in into Revit's Addins folder for that version (close Revit first) -->
+  <Target Name="DeployToRevit" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <ItemGroup>
+      <_AddinFiles Include="$(OutDir)**\*.dll;$(OutDir)**\*.pdb" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_AddinFiles)" DestinationFolder="$(RevitAddinsDir)ElecKit\%(RecursiveDir)" ContinueOnError="true" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\ElecKit.addin" DestinationFolder="$(RevitAddinsDir)" ContinueOnError="true" />
   </Target>
-
 </Project>
