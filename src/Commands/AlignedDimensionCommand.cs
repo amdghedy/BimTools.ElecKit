@@ -32,7 +32,7 @@ namespace ElecKit.Commands
                 "Pick the first element (family instance, grid or reference plane)"));
             Element second = ctx.Doc.GetElement(ctx.UiDoc.Selection.PickObject(ObjectType.Element, filter,
                 "Pick the second element"));
-            if (first.Id.IntegerValue == second.Id.IntegerValue)
+            if (RevitApiCompat.ElementIdValue(first.Id) == RevitApiCompat.ElementIdValue(second.Id))
             {
                 TaskDialog.Show("Aligned Dimension", "Pick two different elements.");
                 return Result.Cancelled;
