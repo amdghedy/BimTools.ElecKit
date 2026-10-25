@@ -102,7 +102,7 @@ namespace ElecKit.Commands
 
                     foreach (Element b in hits)
                     {
-                        int idA = a.Id.IntegerValue, idB = b.Id.IntegerValue;
+                        long idA = RevitApiCompat.ElementIdValue(a.Id), idB = RevitApiCompat.ElementIdValue(b.Id);
                         if (idA == idB) continue;
                         string key = Math.Min(idA, idB) + "-" + Math.Max(idA, idB);
                         if (seen.Add(key)) pairs.Add(new KeyValuePair<Element, Element>(a, b));
@@ -127,8 +127,8 @@ namespace ElecKit.Commands
             foreach (var pair in pairs)
             {
                 csv.AppendLine(string.Join(",",
-                    pair.Key.Id.IntegerValue, Csv.Escape(CategoryName(pair.Key)), Csv.Escape(pair.Key.Name),
-                    pair.Value.Id.IntegerValue, Csv.Escape(CategoryName(pair.Value)), Csv.Escape(pair.Value.Name)));
+                    RevitApiCompat.ElementIdValue(pair.Key.Id), Csv.Escape(CategoryName(pair.Key)), Csv.Escape(pair.Key.Name),
+                    RevitApiCompat.ElementIdValue(pair.Value.Id), Csv.Escape(CategoryName(pair.Value)), Csv.Escape(pair.Value.Name)));
             }
             string path = Reports.PathFor("ClashCheck", ".csv");
             System.IO.File.WriteAllText(path, csv.ToString(), new UTF8Encoding(true));
