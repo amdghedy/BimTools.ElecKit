@@ -1,16 +1,56 @@
-name: Build
-on: [push, pull_request]
+name: Build and package Revit versions
+
+on:
+  push:
+    branches: [main, feature/revit-2020-2027-packages]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build:
+    name: Revit ${{ matrix.revit }}
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        revit: ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027']
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+
+      - name: Install .NET SDKs
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
-      - name: Build
-        run: dotnet build ElecKit.csproj -c Release
-      - uses: actions/upload-artifact@v4
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build directly into the matching version folder
+        shell: pwsh
+        run: |
+          $version = "${{ matrix.revit }}"
+          $target = Join-Path $PWD "RevitVersions/$version"
+          dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=$version
+          if ($LASTEXITCODE -ne 0) { throw "Revit $version build failed." }
+
+          $dll = Join-Path $target 'ElecKit.dll'
+          $addin = Join-Path $target 'ElecKit.addin'
+          if (!(Test-Path $dll)) { throw "Expected DLL was not created in target folder: $dll" }
+          if (!(Test-Path $addin)) { throw "Add-in manifest missing from target folder: $addin" }
+
+          @"
+          Package: ElecKit for Revit $version
+          Build commit: ${{ github.sha }}
+          DLL: RevitVersions/$version/ElecKit.dll
+          Manifest: RevitVersions/$version/ElecKit.addin
+          "@ | Set-Content (Join-Path $target 'BUILD-INFO.txt')
+
+      - name: Upload exact target folder contents
+        uses: actions/upload-artifact@v4
         with:
-          name: ElecKit-Release
-          path: bin/Release/net47/**
+          name: ElecKit-Revit-${{ matrix.revit }}
+          path: RevitVersions/${{ matrix.revit }}/*
+          if-no-files-found: error
+          retention-days: 30

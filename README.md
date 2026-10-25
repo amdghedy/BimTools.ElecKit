@@ -1,6 +1,6 @@
 # ElecKit
 
-**Electrical BIM productivity toolkit** — a C# add-in for Revit 2020, organized around drafting, wiring, annotation, model utilities, analysis, schedules, panels, cable tray, and electrical data.
+**Electrical BIM productivity toolkit** — a C# add-in with version-specific build/package support for Revit 2020–2027, organized around drafting, wiring, annotation, model utilities, analysis, schedules, panels, cable tray, and electrical data.
 
 ElecKit exposes its commands through a configurable ribbon registry. The descriptions below document the tools registered in the repository; availability in the ribbon does not, by itself, guarantee every workflow has been verified in a live project. Validate model-changing commands on a backup copy before production use.
 
@@ -10,6 +10,7 @@ ElecKit exposes its commands through a configurable ribbon registry. The descrip
 - [Complete tool catalogue](#complete-tool-catalogue)
 - [Requirements](#requirements)
 - [Build](#build)
+- [Versioned packages: Revit 2020–2027](#versioned-packages-revit-20202027)
 - [Install](#install)
 - [Configuration, logs, and reports](#configuration-logs-and-reports)
 - [Development and tests](#development-and-tests)
@@ -130,12 +131,12 @@ The catalogue below reflects the commands registered in `src/Core/ToolRegistry.c
 
 ## Requirements
 
-- Windows
-- Revit 2020
+- Windows x64
+- A matching Revit release and its API for local runtime verification
 - Visual Studio 2022 or a compatible .NET SDK/build environment
-- .NET Framework 4.7 targeting support for local development
+- The .NET targeting/runtime support required by the selected Revit release
 
-The project targets `net47` and `x64`. When a local Revit 2020 installation is found, the project references its API assemblies. On CI or a machine without Revit installed, it uses the Revit 2020 API NuGet packages.
+The default project build remains Revit 2020 for backward compatibility. Set `RevitVersion` to select another supported release. The project chooses the corresponding target framework and resolves the matching API NuGet packages when that version is not installed locally. Framework/API compatibility and command behavior must still be verified against each actual Revit release.
 
 ## Build
 
@@ -148,16 +149,40 @@ The project targets `net47` and `x64`. When a local Revit 2020 installation is f
 
 ### .NET CLI
 
-From the repository root:
+From the repository root, the default build targets Revit 2020:
 
 ```bash
-dotnet build ElecKit.csproj -c Debug
 dotnet build ElecKit.csproj -c Release
 ```
 
-A Debug build attempts to copy the add-in assembly and manifest into the current user's Revit 2020 add-ins directory. Deployment copy operations are configured to continue if the destination is unavailable; check the build output and install paths rather than assuming deployment succeeded.
+To build another release, pass its version explicitly:
 
-GitHub Actions builds the project using the Revit API NuGet packages. See [the build workflow](.github/workflows/build.yml) for the current CI steps.
+```bash
+dotnet build ElecKit.csproj -c Release -p:RevitVersion=2024
+dotnet build ElecKit.csproj -c Release -p:RevitVersion=2025
+dotnet build ElecKit.csproj -c Release -p:RevitVersion=2027
+```
+
+For a local Debug build, deployment is opt-in: pass `-p:DeployToRevit=true` to copy output into the selected version's user Addins folder. Close Revit first. Inspect the build output and destination; do not assume deployment succeeded.
+
+GitHub Actions runs a version matrix and publishes a separate installable package artifact for each version when that version's build succeeds. See [the build workflow](.github/workflows/build.yml).
+
+## Versioned packages: Revit 2020–2027
+
+The version-specific manifests and packaging notes are maintained in [RevitVersions/](RevitVersions/README.md):
+
+- Revit 2020
+- Revit 2021
+- Revit 2022
+- Revit 2023
+- Revit 2024
+- Revit 2025
+- Revit 2026
+- Revit 2027
+
+The GitHub Actions workflow compiles each version separately and, on successful builds, uploads a package artifact named `ElecKit-Revit-<version>` containing that version's `ElecKit.dll`, `ElecKit.addin`, and build information. Download the artifact from the workflow run's **Artifacts** section. These generated DLLs are build outputs and are not checked into Git as binary files.
+
+A version folder in the source tree contains the manifest and instructions; it is not a complete installable package until the matching DLL has been built. Never copy one Revit version's DLL into another version's folder and assume compatibility. A green compile is not a substitute for launching that Revit release and smoke-testing the add-in.
 
 ## Install
 

@@ -24,11 +24,19 @@ namespace ElecKit.Commands
             "ElecKit Cable Size", "ElecKit Notes", "ElecKit Mounting Height"
         };
 
+#if REVIT2022_OR_GREATER
+        private static readonly ForgeTypeId[] Types =
+        {
+            SpecTypeId.String.Text, SpecTypeId.String.Text, SpecTypeId.String.Text,
+            SpecTypeId.String.Text, SpecTypeId.String.Text, SpecTypeId.Length
+        };
+#else
         private static readonly ParameterType[] Types =
         {
             ParameterType.Text, ParameterType.Text, ParameterType.Text,
             ParameterType.Text, ParameterType.Text, ParameterType.Length
         };
+#endif
 
         private static readonly BuiltInCategory[] Categories =
         {
@@ -85,7 +93,12 @@ namespace ElecKit.Commands
                         definition = group.Definitions.Create(new ExternalDefinitionCreationOptions(Names[i], Types[i]));
 
                     InstanceBinding binding = app.Create.NewInstanceBinding(categories);
-                    if (ctx.Doc.ParameterBindings.Insert(definition, binding, BuiltInParameterGroup.PG_IDENTITY_DATA)) created++;
+#if REVIT2025_OR_GREATER
+                    bool inserted = ctx.Doc.ParameterBindings.Insert(definition, binding, GroupTypeId.IdentityData);
+#else
+                    bool inserted = ctx.Doc.ParameterBindings.Insert(definition, binding, BuiltInParameterGroup.PG_IDENTITY_DATA);
+#endif
+                    if (inserted) created++;
                     else failed++;
                 }
             });

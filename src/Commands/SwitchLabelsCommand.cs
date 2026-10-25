@@ -79,7 +79,7 @@ namespace ElecKit.Commands
         private static bool IsSwitch(Element e)
         {
             return e is FamilyInstance && e.Category != null &&
-                   e.Category.Id.IntegerValue == (int)BuiltInCategory.OST_LightingDevices;
+                   RevitApiCompat.ElementIdValue(e.Category.Id) == (int)BuiltInCategory.OST_LightingDevices;
         }
 
         /// <summary>0 -> a, 25 -> z, 26 -> aa ...</summary>
