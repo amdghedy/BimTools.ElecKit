@@ -21,15 +21,18 @@
     <HasLocalRevit Condition="Exists('$(RevitInstallDir)RevitAPI.dll')">true</HasLocalRevit>
     <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\$(RevitVersion)\</RevitAddinsDir>
   </PropertyGroup>
-  <!-- .NET version per Revit version: 2020 = 4.7, 2021-2024 = 4.8, 2025+ = .NET 8 -->
+  <!-- .NET version per Revit version: 2020 = 4.7, 2021-2024 = 4.8, 2025-2026 = .NET 8, 2027 = .NET 10 -->
   <PropertyGroup Condition="'$(RevitVersion)' == '2020'">
     <TargetFramework>net47</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RevitVersion)' == '2021' Or '$(RevitVersion)' == '2022' Or '$(RevitVersion)' == '2023' Or '$(RevitVersion)' == '2024'">
     <TargetFramework>net48</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026' Or '$(RevitVersion)' == '2027'">
+  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026'">
     <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2027'">
+    <TargetFramework>net10.0-windows</TargetFramework>
   </PropertyGroup>
   <!-- compile-time switches used in the code: REVIT2024, REVIT2022_OR_GREATER, REVIT2024_OR_GREATER -->
   <PropertyGroup>
