@@ -97,7 +97,24 @@ jobs:
           }
       - name: Install Inno Setup
         shell: pwsh
-        run: choco install innosetup --yes --no-progress
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "Chocolatey failed to install Inno Setup (exit code $LASTEXITCODE)." }
+          # Validate installation immediately so package/install failures are reported here.
+          $roots = @(
+            (Join-Path $env:ProgramData 'chocolatey/lib/innosetup'),
+            (Join-Path $env:ProgramData 'chocolatey/lib/innosetup.install'),
+            $env:ProgramFiles,
+            ${env:ProgramFiles(x86)}
+          ) | Where-Object { $_ -and (Test-Path $_) }
+          $found = Get-ChildItem -Path $roots -Filter 'ISCC.exe' -File -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty FullName -First 1
+          if (-not $found) {
+            choco list --local-only
+            throw 'Inno Setup installation completed but ISCC.exe was not found in the expected installation roots.'
+          }
+          Write-Host "Inno Setup compiler installed at: $found"
       - name: Compile installer
         shell: pwsh
         run: |
@@ -106,11 +123,13 @@ jobs:
           $isccCommand = Get-Command 'ISCC.exe' -ErrorAction SilentlyContinue
           $candidates = @()
           if ($isccCommand) { $candidates += $isccCommand.Source }
+          $candidates += (Join-Path $env:ProgramData 'chocolatey/lib/innosetup/tools/ISCC.exe')
+          $candidates += (Join-Path $env:ProgramData 'chocolatey/lib/innosetup.install/tools/ISCC.exe')
           if ($env:ProgramFiles) { $candidates += (Join-Path $env:ProgramFiles 'Inno Setup 6/ISCC.exe') }
           if (${env:ProgramFiles(x86)}) { $candidates += (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6/ISCC.exe') }
           $iscc = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
           if (-not $iscc) {
-            $roots = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, (Join-Path $env:ProgramData 'chocolatey'))
+            $roots = @((Join-Path $env:ProgramData 'chocolatey/lib/innosetup'), (Join-Path $env:ProgramData 'chocolatey/lib/innosetup.install'), $env:ProgramFiles, ${env:ProgramFiles(x86)})
             $iscc = Get-ChildItem -Path ($roots | Where-Object { $_ -and (Test-Path $_) }) -Filter 'ISCC.exe' -File -Recurse -ErrorAction SilentlyContinue |
               Select-Object -ExpandProperty FullName -First 1
           }
