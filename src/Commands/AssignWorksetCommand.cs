@@ -52,7 +52,7 @@ namespace ElecKit.Commands
             }
 
             var labels = new List<string>();
-            foreach (Workset workset in worksets) labels.Add(workset.Name + " (ID " + RevitApiCompat.ElementIdValue(workset.Id) + ")");
+            foreach (Workset workset in worksets) labels.Add(workset.Name + " (ID " + RevitApiCompat.WorksetIdValue(workset.Id) + ")");
             int chosen = Dialogs.Choose("Assign Workset",
                 "Selected elements: " + elements.Count + "\nChoose the destination user workset. Elements that cannot be changed will be reported.",
                 labels, 0);
@@ -74,8 +74,8 @@ namespace ElecKit.Commands
                             if (failures.Count < 10) failures.Add(RevitApiCompat.ElementIdValue(e.Id) + ": workset parameter unavailable/read-only");
                             continue;
                         }
-                        if (RevitApiCompat.ElementIdValue(p.AsElementId()) == RevitApiCompat.ElementIdValue(target.Id)) { unchanged++; continue; }
-                        if (!p.Set(RevitApiCompat.CreateElementId(RevitApiCompat.ElementIdValue(target.Id))))
+                        if (RevitApiCompat.ElementIdValue(p.AsElementId()) == RevitApiCompat.WorksetIdValue(target.Id)) { unchanged++; continue; }
+                        if (!p.Set(RevitApiCompat.CreateElementId(RevitApiCompat.WorksetIdValue(target.Id))))
                         {
                             failed++;
                             if (failures.Count < 10) failures.Add(RevitApiCompat.ElementIdValue(e.Id) + ": Revit rejected assignment");
