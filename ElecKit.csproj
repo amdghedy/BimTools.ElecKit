@@ -15,6 +15,7 @@
     <LangVersion>10.0</LangVersion>
     <DefineConstants Condition="'$(RevitVersion)' == '2022' or '$(RevitVersion)' == '2023' or '$(RevitVersion)' == '2024' or '$(RevitVersion)' == '2025' or '$(RevitVersion)' == '2026' or '$(RevitVersion)' == '2027'">$(DefineConstants);REVIT2022_OR_GREATER</DefineConstants>
     <DefineConstants Condition="'$(RevitVersion)' == '2025' or '$(RevitVersion)' == '2026' or '$(RevitVersion)' == '2027'">$(DefineConstants);REVIT2025_OR_GREATER</DefineConstants>
+    <DefineConstants Condition="'$(RevitVersion)' == '2026' or '$(RevitVersion)' == '2027'">$(DefineConstants);REVIT2026_OR_GREATER</DefineConstants>
     <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit $(RevitVersion)\</RevitInstallDir>
     <HasLocalRevit Condition="Exists('$(RevitInstallDir)RevitAPI.dll')">true</HasLocalRevit>
     <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\$(RevitVersion)\</RevitAddinsDir>
