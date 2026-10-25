@@ -94,10 +94,11 @@ namespace ElecKit.Commands
 
                     InstanceBinding binding = app.Create.NewInstanceBinding(categories);
 #if REVIT2025_OR_GREATER
-                    if (ctx.Doc.ParameterBindings.Insert(definition, binding, GroupTypeId.IdentityData)) created++;
+                    bool inserted = ctx.Doc.ParameterBindings.Insert(definition, binding, GroupTypeId.IdentityData);
 #else
-                    if (ctx.Doc.ParameterBindings.Insert(definition, binding, BuiltInParameterGroup.PG_IDENTITY_DATA)) created++;
+                    bool inserted = ctx.Doc.ParameterBindings.Insert(definition, binding, BuiltInParameterGroup.PG_IDENTITY_DATA);
 #endif
+                    if (inserted) created++;
                     else failed++;
                 }
             });
