@@ -1,0 +1,110 @@
+name: Build and publish ElecKit release folder
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'Release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Revit \${{ matrix.revit }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        revit: ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Build selected Revit version
+        shell: pwsh
+        run: |
+          $version = "\${{ matrix.revit }}"
+          dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=$version
+          if ($LASTEXITCODE -ne 0) { throw "Revit $version build failed." }
+          $folder = Join-Path $PWD "RevitVersions/$version"
+          foreach ($required in @('ElecKit.dll', 'ElecKit.addin')) {
+            if (!(Test-Path (Join-Path $folder $required))) { throw "Missing $required for Revit $version." }
+          }
+          @"
+          Package: ElecKit for Revit $version
+          Build commit: \${{ github.sha }}
+          DLL: RevitVersions/$version/ElecKit.dll
+          Manifest: RevitVersions/$version/ElecKit.addin
+          "@ | Set-Content (Join-Path $folder 'BUILD-INFO.txt')
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElecKit-Revit-\${{ matrix.revit }}
+          path: RevitVersions/\${{ matrix.revit }}/*
+          if-no-files-found: error
+          retention-days: 7
+
+  package:
+    name: Assemble release folder and installer
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ElecKit-Revit-*
+          path: Release/RevitVersions
+          merge-multiple: false
+      - name: Normalize versioned folder names
+        shell: pwsh
+        run: |
+          $root = Join-Path $PWD 'Release/RevitVersions'
+          foreach ($version in @('2020','2021','2022','2023','2024','2025','2026','2027')) {
+            $artifact = Join-Path $root "ElecKit-Revit-$version"
+            $target = Join-Path $root $version
+            if (!(Test-Path (Join-Path $artifact 'ElecKit.dll'))) { throw "Artifact for Revit $version is incomplete." }
+            Move-Item $artifact $target
+          }
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $compiler = "\${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $compiler)) { $compiler = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
+          if (!(Test-Path $compiler)) { throw 'ISCC.exe was not found.' }
+          & $compiler 'installer/ElecKit.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
+          if (!(Test-Path 'Release/ElecKit-Installer.exe')) { throw 'Installer EXE was not generated.' }
+      - name: Write release package index
+        shell: pwsh
+        run: |
+          @"
+          # ElecKit release package
+
+          Installer: \`ElecKit-Installer.exe\`
+
+          Version-specific files are in \`RevitVersions/<year>/\` for Revit 2020–2027.
+          This package was generated from commit \${{ github.sha }} after all eight version builds succeeded.
+          Compilation does not replace smoke-testing in each installed Revit version.
+          "@ | Set-Content 'Release/README.md'
+      - name: Commit generated release folder to main
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Release
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host 'Release folder is already up to date.'
+            exit 0
+          }
+          git commit -m "chore(release): publish Revit 2020-2027 packages [skip ci]"
+          git push origin HEAD:main
