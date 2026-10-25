@@ -34,19 +34,19 @@ Name: "rv2026"; Description: "Revit 2026"; Types: full custom
 Name: "rv2027"; Description: "Revit 2027"; Types: full custom
 
 [Files]
-Source: "..\Release\RevitVersions\2020\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020\ElecKit"; Components: rv2020; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2020\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020"; Components: rv2020; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2020\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2020"; Components: rv2020; Flags: ignoreversion
-Source: "..\Release\RevitVersions\2021\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2021\ElecKit"; Components: rv2021; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2021\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2021"; Components: rv2021; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2021\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2021"; Components: rv2021; Flags: ignoreversion
-Source: "..\Release\RevitVersions\2022\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2022\ElecKit"; Components: rv2022; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2022\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2022"; Components: rv2022; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2022\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2022"; Components: rv2022; Flags: ignoreversion
-Source: "..\Release\RevitVersions\2023\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2023\ElecKit"; Components: rv2023; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2023\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2023"; Components: rv2023; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2023\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2023"; Components: rv2023; Flags: ignoreversion
-Source: "..\Release\RevitVersions\2024\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2024\ElecKit"; Components: rv2024; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2024\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2024"; Components: rv2024; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2024\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2024"; Components: rv2024; Flags: ignoreversion
-Source: "..\Release\RevitVersions\2025\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2025\ElecKit"; Components: rv2025; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2025\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2025"; Components: rv2025; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2025\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2025"; Components: rv2025; Flags: ignoreversion
-Source: "..\Release\RevitVersions\2026\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2026\ElecKit"; Components: rv2026; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2026\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2026"; Components: rv2026; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2026\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2026"; Components: rv2026; Flags: ignoreversion
-Source: "..\Release\RevitVersions\2027\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2027\ElecKit"; Components: rv2027; Flags: ignoreversion
+Source: "..\Release\RevitVersions\2027\ElecKit.dll"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2027"; Components: rv2027; Flags: ignoreversion
 Source: "..\Release\RevitVersions\2027\ElecKit.addin"; DestDir: "{userappdata}\Autodesk\Revit\Addins\2027"; Components: rv2027; Flags: ignoreversion
