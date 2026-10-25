@@ -38,11 +38,11 @@ namespace ElecKit.Commands
             catch (Autodesk.Revit.Exceptions.OperationCanceledException) { return Result.Cancelled; }
 
             var elements = new List<Element>();
-            var seen = new HashSet<int>();
+            var seen = new HashSet<long>();
             foreach (Reference reference in picked)
             {
                 Element e = ctx.Doc.GetElement(reference);
-                if (e != null && !(e is ElementType) && seen.Add(e.Id.IntegerValue)) elements.Add(e);
+                if (e != null && !(e is ElementType) && seen.Add(RevitApiCompat.ElementIdValue(e.Id))) elements.Add(e);
             }
             if (elements.Count == 0)
             {
@@ -107,12 +107,12 @@ namespace ElecKit.Commands
             foreach (Column column in columns) csv.Append(",").Append(Csv.Escape(column.Name));
             csv.AppendLine();
 
-            foreach (Element e in elements.OrderBy(x => x.Id.IntegerValue))
+            foreach (Element e in elements.OrderBy(x => RevitApiCompat.ElementIdValue(x.Id)))
             {
                 Parameter markParameter = e.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
                 string mark = markParameter != null && markParameter.StorageType == StorageType.String
                     ? markParameter.AsString() : "";
-                csv.Append(e.Id.IntegerValue.ToString(CultureInfo.InvariantCulture))
+                csv.Append(RevitApiCompat.ElementIdValue(e.Id).ToString(CultureInfo.InvariantCulture))
                     .Append(",").Append(Csv.Escape(mark));
                 foreach (Column column in columns)
                 {
