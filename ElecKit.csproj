@@ -40,6 +40,14 @@
     <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitApiPackageVersion)" ExcludeAssets="runtime" />
   </ItemGroup>
 
+  <!-- Fail the build if the version-specific target folder is missing either required file. -->
+  <Target Name="VerifyVersionedOutput" AfterTargets="Build">
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\\RevitVersions\\$(RevitVersion)\\ElecKit.dll')"
+           Text="ElecKit.dll was not created in RevitVersions\\$(RevitVersion). Check the build output and target framework." />
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\\RevitVersions\\$(RevitVersion)\\ElecKit.addin')"
+           Text="ElecKit.addin is missing from RevitVersions\\$(RevitVersion)." />
+  </Target>
+
   <!-- Opt-in local deployment only; Release/CI builds never install files on the runner. -->
   <Target Name="DeployToRevit" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(DeployToRevit)' == 'true'">
     <ItemGroup>
