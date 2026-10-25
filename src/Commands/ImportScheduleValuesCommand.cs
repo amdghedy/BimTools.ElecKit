@@ -134,7 +134,7 @@ namespace ElecKit.Commands
                     {
                         List<Element> markMatches;
                         if (!markMap.TryGetValue(rowMark, out markMatches) ||
-                            markMatches.Count != 1 || markMatches[0].RevitApiCompat.ElementIdValue(Id) != RevitApiCompat.ElementIdValue(el.Id))
+                            markMatches.Count != 1 || RevitApiCompat.ElementIdValue(markMatches[0].Id) != RevitApiCompat.ElementIdValue(el.Id))
                         {
                             skipped++;
                             if (issues.Count < 50)
