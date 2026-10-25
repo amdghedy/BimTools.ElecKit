@@ -36,7 +36,7 @@ namespace ElecKit.Commands
                     Reference r2 = ctx.UiDoc.Selection.PickObject(ObjectType.Element, filter,
                         "Pick the second detail line (click the part to keep).");
 
-                    if (r1.ElementId.IntegerValue == r2.ElementId.IntegerValue)
+                    if (RevitApiCompat.ElementIdValue(r1.ElementId) == RevitApiCompat.ElementIdValue(r2.ElementId))
                     {
                         TaskDialog.Show("Fillet Two Lines", "Pick two different lines.");
                         continue;
