@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Revit ${{ matrix.revit }}
@@ -24,39 +27,30 @@ jobs:
             8.0.x
             10.0.x
 
-      - name: Build version-specific assembly
-        shell: pwsh
-        run: dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=${{ matrix.revit }}
-
-      - name: Stage versioned package
+      - name: Build directly into the matching version folder
         shell: pwsh
         run: |
           $version = "${{ matrix.revit }}"
-          $framework = switch ($version) {
-            '2020' { 'net47' }
-            { $_ -in '2021','2022','2023','2024' } { 'net48' }
-            { $_ -in '2025','2026' } { 'net8.0-windows' }
-            '2027' { 'net10.0-windows' }
-          }
-          $source = Join-Path $PWD "bin/Release/$framework"
-          $destination = Join-Path $PWD "artifacts/RevitVersions/$version"
-          if (!(Test-Path (Join-Path $source 'ElecKit.dll'))) {
-            throw "Build output ElecKit.dll not found at $source"
-          }
-          New-Item -ItemType Directory -Path $destination -Force | Out-Null
-          Copy-Item (Join-Path $source '*') $destination -Recurse -Force
-          Copy-Item "RevitVersions/$version/ElecKit.addin" $destination
-          Copy-Item "RevitVersions/$version/README.md" $destination
-          @"
-          ElecKit package for Revit $version
-          Built from commit: ${{ github.sha }}
-          API package/build target: Revit $version
-          "@ | Set-Content (Join-Path $destination 'BUILD-INFO.txt')
+          $target = Join-Path $PWD "RevitVersions/$version"
+          dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=$version
+          if ($LASTEXITCODE -ne 0) { throw "Revit $version build failed." }
 
-      - name: Upload installable package
+          $dll = Join-Path $target 'ElecKit.dll'
+          $addin = Join-Path $target 'ElecKit.addin'
+          if (!(Test-Path $dll)) { throw "Expected DLL was not created in target folder: $dll" }
+          if (!(Test-Path $addin)) { throw "Add-in manifest missing from target folder: $addin" }
+
+          @"
+          Package: ElecKit for Revit $version
+          Build commit: ${{ github.sha }}
+          DLL: RevitVersions/$version/ElecKit.dll
+          Manifest: RevitVersions/$version/ElecKit.addin
+          "@ | Set-Content (Join-Path $target 'BUILD-INFO.txt')
+
+      - name: Upload exact target folder contents
         uses: actions/upload-artifact@v4
         with:
           name: ElecKit-Revit-${{ matrix.revit }}
-          path: artifacts/RevitVersions/${{ matrix.revit }}/*
+          path: RevitVersions/${{ matrix.revit }}/*
           if-no-files-found: error
           retention-days: 30
