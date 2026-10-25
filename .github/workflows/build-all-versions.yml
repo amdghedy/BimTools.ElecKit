@@ -30,7 +30,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Get-ChildItem 'src' -Filter '*.cs' -Recurse |
-            Where-Object { $_.Name -ne 'AssignWorksetCommand.cs' } |
+            Where-Object { $_.Name -notin @('AssignWorksetCommand.cs', 'WorksetsByTypeCommand.cs') } |
             ForEach-Object {
               $original = Get-Content $_.FullName -Raw
               $updated = $original -replace '\.IntegerValue', '.Value'
