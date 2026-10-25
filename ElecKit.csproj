@@ -13,8 +13,6 @@
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <LangVersion>10.0</LangVersion>
-    <!-- Test sources are compiled only by tests/ElecKit.Tests, never into the Revit add-in. -->
-    <Compile Remove="tests/**/*.cs" />
     <DefineConstants Condition="'$(RevitVersion)' == '2022' or '$(RevitVersion)' == '2023' or '$(RevitVersion)' == '2024' or '$(RevitVersion)' == '2025' or '$(RevitVersion)' == '2026' or '$(RevitVersion)' == '2027'">$(DefineConstants);REVIT2022_OR_GREATER</DefineConstants>
     <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit $(RevitVersion)\</RevitInstallDir>
     <HasLocalRevit Condition="Exists('$(RevitInstallDir)RevitAPI.dll')">true</HasLocalRevit>
@@ -24,6 +22,11 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <RevitApiPackageVersion>$(RevitVersion).*</RevitApiPackageVersion>
   </PropertyGroup>
+
+  <!-- Test sources are compiled only by tests/ElecKit.Tests, never into the Revit add-in. -->
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
 
   <!-- Prefer the exact installed Revit API when building on a workstation with that version installed. -->
   <ItemGroup Condition="'$(HasLocalRevit)' == 'true'">
