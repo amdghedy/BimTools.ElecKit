@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     Build for one Revit version:   dotnet build ElecKit.csproj -c Release -p:RevitVersion=2024
-    Supported: 2020 2021 2022 2023 2024 2025 2026   (default 2020)
+    Supported: 2020 2021 2022 2023 2024 2025 2026 2027 (default 2020)
     Output:    bin\Release\R<version>\ElecKit.dll
   -->
   <PropertyGroup>
@@ -28,7 +28,7 @@
   <PropertyGroup Condition="'$(RevitVersion)' == '2021' Or '$(RevitVersion)' == '2022' Or '$(RevitVersion)' == '2023' Or '$(RevitVersion)' == '2024'">
     <TargetFramework>net48</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026'">
+  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026' Or '$(RevitVersion)' == '2027'">
     <TargetFramework>net8.0-windows</TargetFramework>
   </PropertyGroup>
   <!-- compile-time switches used in the code: REVIT2024, REVIT2022_OR_GREATER, REVIT2024_OR_GREATER -->
