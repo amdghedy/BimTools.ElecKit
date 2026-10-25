@@ -33,7 +33,7 @@ namespace ElecKit.Commands
             IList<Reference> deviceRefs = ctx.UiDoc.Selection.PickObjects(ObjectType.Element, filter,
                 "Pick the devices in order, then click Finish");
             List<Element> devices = deviceRefs
-                .Where(r => r.ElementId.IntegerValue != panel.Id.IntegerValue)
+                .Where(r => RevitApiCompat.ElementIdValue(r.ElementId) != RevitApiCompat.ElementIdValue(panel.Id))
                 .Select(r => ctx.Doc.GetElement(r))
                 .ToList();
             if (devices.Count == 0)
