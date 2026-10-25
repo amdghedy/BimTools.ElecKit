@@ -44,7 +44,7 @@ jobs:
             throw "Build output ElecKit.dll not found at $source"
           }
           New-Item -ItemType Directory -Path $destination -Force | Out-Null
-          Copy-Item (Join-Path $source 'ElecKit.dll') $destination
+          Copy-Item (Join-Path $source '*') $destination -Recurse -Force
           Copy-Item "RevitVersions/$version/ElecKit.addin" $destination
           Copy-Item "RevitVersions/$version/README.md" $destination
           @"
