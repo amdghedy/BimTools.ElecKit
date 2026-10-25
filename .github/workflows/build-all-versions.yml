@@ -102,9 +102,21 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $iscc = Join-Path $env:ProgramFiles 'Inno Setup 6/ISCC.exe'
-          if (!(Test-Path $iscc)) { throw "Inno Setup compiler not found: $iscc" }
-          & $iscc "EXE/ElecKit.iss"
+          # Chocolatey may install Inno Setup under Program Files (x86), not Program Files.
+          $isccCommand = Get-Command 'ISCC.exe' -ErrorAction SilentlyContinue
+          $candidates = @()
+          if ($isccCommand) { $candidates += $isccCommand.Source }
+          if ($env:ProgramFiles) { $candidates += (Join-Path $env:ProgramFiles 'Inno Setup 6/ISCC.exe') }
+          if (${env:ProgramFiles(x86)}) { $candidates += (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6/ISCC.exe') }
+          $iscc = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+          if (-not $iscc) {
+            $roots = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, (Join-Path $env:ProgramData 'chocolatey'))
+            $iscc = Get-ChildItem -Path ($roots | Where-Object { $_ -and (Test-Path $_) }) -Filter 'ISCC.exe' -File -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty FullName -First 1
+          }
+          if (-not $iscc) { throw 'Inno Setup compiler ISCC.exe not found after installation.' }
+          Write-Host "Using Inno Setup compiler: $iscc"
+          & $iscc "/OEXE/dist" "EXE/ElecKit.iss"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
           if (!(Test-Path 'EXE/dist/ElecKit-Setup.exe')) { throw 'Installer EXE was not created.' }
       - uses: actions/upload-artifact@v4
