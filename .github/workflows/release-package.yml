@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Revit \${{ matrix.revit }}
+    name: Build Revit ${{ matrix.revit }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -28,7 +28,7 @@ jobs:
       - name: Build selected Revit version
         shell: pwsh
         run: |
-          $version = "\${{ matrix.revit }}"
+          $version = "${{ matrix.revit }}"
           dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=$version
           if ($LASTEXITCODE -ne 0) { throw "Revit $version build failed." }
           $folder = Join-Path $PWD "RevitVersions/$version"
@@ -37,14 +37,14 @@ jobs:
           }
           @"
           Package: ElecKit for Revit $version
-          Build commit: \${{ github.sha }}
+          Build commit: ${{ github.sha }}
           DLL: RevitVersions/$version/ElecKit.dll
           Manifest: RevitVersions/$version/ElecKit.addin
           "@ | Set-Content (Join-Path $folder 'BUILD-INFO.txt')
       - uses: actions/upload-artifact@v4
         with:
-          name: ElecKit-Revit-\${{ matrix.revit }}
-          path: RevitVersions/\${{ matrix.revit }}/*
+          name: ElecKit-Revit-${{ matrix.revit }}
+          path: RevitVersions/${{ matrix.revit }}/*
           if-no-files-found: error
           retention-days: 7
 
@@ -77,7 +77,7 @@ jobs:
       - name: Compile installer
         shell: pwsh
         run: |
-          $compiler = "\${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (!(Test-Path $compiler)) { $compiler = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
           if (!(Test-Path $compiler)) { throw 'ISCC.exe was not found.' }
           & $compiler 'installer/ElecKit.iss'
@@ -89,10 +89,10 @@ jobs:
           @"
           # ElecKit release package
 
-          Installer: \`ElecKit-Installer.exe\`
+          Installer: `ElecKit-Installer.exe`
 
-          Version-specific files are in \`RevitVersions/<year>/\` for Revit 2020–2027.
-          This package was generated from commit \${{ github.sha }} after all eight version builds succeeded.
+          Version-specific files are in `RevitVersions/<year>/` for Revit 2020–2027.
+          This package was generated from commit ${{ github.sha }} after all eight version builds succeeded.
           Compilation does not replace smoke-testing in each installed Revit version.
           "@ | Set-Content 'Release/README.md'
       - name: Commit generated release folder to main
