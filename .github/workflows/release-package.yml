@@ -31,9 +31,13 @@ jobs:
           $version = "${{ matrix.revit }}"
           dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=$version
           if ($LASTEXITCODE -ne 0) { throw "Revit $version build failed." }
+          $buildFolder = Join-Path $PWD "bin/Release/R$version"
           $folder = Join-Path $PWD "RevitVersions/$version"
+          New-Item -ItemType Directory -Force $folder | Out-Null
           foreach ($required in @('ElecKit.dll', 'ElecKit.addin')) {
-            if (!(Test-Path (Join-Path $folder $required))) { throw "Missing $required for Revit $version." }
+            $source = Join-Path $buildFolder $required
+            if (!(Test-Path $source)) { throw "Missing $required for Revit $version at $source." }
+            Copy-Item $source (Join-Path $folder $required) -Force
           }
           @"
           Package: ElecKit for Revit $version
