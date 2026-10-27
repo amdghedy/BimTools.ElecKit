@@ -1,0 +1,4 @@
+Package: ElecKit for Revit 2021
+Build commit: 20593ecb30c30e137aca5da92b04fd065bf0fd2f
+DLL: RevitVersions/2021/ElecKit.dll
+Manifest: RevitVersions/2021/ElecKit.addin

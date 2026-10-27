@@ -1,0 +1,4 @@
+Package: ElecKit for Revit 2022
+Build commit: 20593ecb30c30e137aca5da92b04fd065bf0fd2f
+DLL: RevitVersions/2022/ElecKit.dll
+Manifest: RevitVersions/2022/ElecKit.addin
