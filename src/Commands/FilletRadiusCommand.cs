@@ -9,18 +9,10 @@ namespace ElecKit.Commands
     {
         protected override Result Run(ToolContext ctx, ref string message)
         {
-            string answer = Dialogs.Ask(
-                "Fillet Radius",
-                "Default fillet radius in millimetres (used by the fillet tools):",
-                UnitConv.Format(ElecSettings.Current.EffectiveFilletRadiusMm));
-            if (answer == null) return Result.Cancelled;
-
-            double mm;
-            if (!UnitConv.TryParseNumber(answer, out mm) || mm <= 0)
-            {
-                TaskDialog.Show("Fillet Radius", "Enter a number greater than zero.");
-                return Result.Cancelled;
-            }
+            double? radius = Dialogs.AskNumber("Fillet Radius", "Default fillet radius used by the fillet tools:",
+                ElecSettings.Current.EffectiveFilletRadiusMm, true, "mm");
+            if (radius == null) return Result.Cancelled;
+            double mm = radius.Value;
 
             ElecSettings.Current.FilletRadiusMm = mm;
             ElecSettings.Current.Save();

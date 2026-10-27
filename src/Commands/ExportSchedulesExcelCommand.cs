@@ -70,10 +70,9 @@ namespace ElecKit.Commands
             string path = Reports.PathFor(mode == 0 ? schedules[0].Name : "Schedules", ".xlsx");
             XlsxWriter.Write(path, sheets);
 
-            string text = sheets.Count + " schedule(s) exported to:\n" + path;
-            if (failed.Count > 0) text += "\n\nSkipped (see log):\n" + string.Join("\n", failed);
-            TaskDialog.Show("Export Schedules to Excel", text);
-            Reports.OpenIfWanted(path);
+            var notes = new List<string>();
+            if (failed.Count > 0) notes.Add("Skipped (see log): " + string.Join(", ", failed));
+            Reports.Finish("Export Schedules to Excel", sheets.Count + " schedule(s) exported.", notes, path);
             return Result.Succeeded;
         }
 

@@ -32,15 +32,10 @@ namespace ElecKit.Core
                 if (index < 0) return false;
             }
 
-            string answer = Dialogs.Ask(title, "Conduit height above the level, in millimetres:",
-                UnitConv.Format(ElecSettings.Current.EffectiveConduitOffsetMm));
-            if (answer == null) return false;
-
-            if (!UnitConv.TryParseNumber(answer, out offsetMm))
-            {
-                TaskDialog.Show(title, "Enter a number, for example 2700.");
-                return false;
-            }
+            double? offset = Dialogs.AskNumber(title, "Conduit height above the level:",
+                ElecSettings.Current.EffectiveConduitOffsetMm, false, "mm");
+            if (offset == null) return false;
+            offsetMm = offset.Value;
 
             type = types[index];
             ElecSettings.Current.LastConduitType = type.Name;

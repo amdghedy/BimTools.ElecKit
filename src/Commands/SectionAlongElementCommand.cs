@@ -34,14 +34,9 @@ namespace ElecKit.Commands
             }
             along = along.Normalize();
 
-            string answer = Dialogs.Ask("Section Along Element", "How far the section looks into the model, in millimetres:", "3000");
-            if (answer == null) return Result.Cancelled;
-            double depthMm;
-            if (!UnitConv.TryParseNumber(answer, out depthMm) || depthMm <= 0)
-            {
-                TaskDialog.Show("Section Along Element", "Enter a number greater than zero, for example 3000.");
-                return Result.Cancelled;
-            }
+            double? depth = Dialogs.AskNumber("Section Along Element", "How far the section looks into the model:", 3000, true, "mm");
+            if (depth == null) return Result.Cancelled;
+            double depthMm = depth.Value;
 
             ViewFamilyType sectionType = new FilteredElementCollector(ctx.Doc)
                 .OfClass(typeof(ViewFamilyType))

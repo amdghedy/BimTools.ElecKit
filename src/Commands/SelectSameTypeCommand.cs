@@ -17,7 +17,7 @@ namespace ElecKit.Commands
 
             Element source = ctx.Doc.GetElement(picked);
             ElementId typeId = source.GetTypeId();
-            if (typeId == null || RevitApiCompat.ElementIdValue(typeId) == RevitApiCompat.ElementIdValue(ElementId.InvalidElementId))
+            if (typeId == null || typeId.Val() == ElementId.InvalidElementId.Val())
             {
                 TaskDialog.Show("Select Same Type", "That element has no type.");
                 return Result.Cancelled;
@@ -25,7 +25,7 @@ namespace ElecKit.Commands
 
             var ids = new FilteredElementCollector(ctx.Doc, ctx.Doc.ActiveView.Id)
                 .WhereElementIsNotElementType()
-                .Where(e => RevitApiCompat.ElementIdValue(e.GetTypeId()) == RevitApiCompat.ElementIdValue(typeId))
+                .Where(e => e.GetTypeId().Val() == typeId.Val())
                 .Select(e => e.Id)
                 .ToList();
 

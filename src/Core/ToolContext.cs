@@ -9,9 +9,11 @@ namespace ElecKit.Core
         public UIApplication UiApp { get; private set; }
         public UIDocument UiDoc { get; private set; }
         public Document Doc { get; private set; }
+        public ExternalCommandData Data { get; private set; }
 
         public ToolContext(ExternalCommandData data)
         {
+            Data = data;
             UiApp = data.Application;
             UiDoc = UiApp.ActiveUIDocument;
             Doc = UiDoc.Document;

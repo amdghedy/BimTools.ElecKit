@@ -8,6 +8,30 @@ namespace ElecKit.Core
     public static class ParameterChooser
     {
         /// <summary>
+        /// Asks for any parameter of a sample element. With writableTextOnly the list holds only writable text
+        /// parameters; otherwise every parameter that has a value. Returns null if cancelled or none exist.
+        /// </summary>
+        public static string Pick(Element sample, string title, string prompt, bool writableTextOnly)
+        {
+            var names = new List<string>();
+            foreach (Parameter p in sample.Parameters)
+            {
+                if (p.Definition == null || names.Contains(p.Definition.Name)) continue;
+                if (writableTextOnly && (p.StorageType != StorageType.String || p.IsReadOnly)) continue;
+                if (!writableTextOnly && !p.HasValue) continue;
+                names.Add(p.Definition.Name);
+            }
+            if (names.Count == 0)
+            {
+                TaskDialog.Show(title, "The first element has no suitable parameter.");
+                return null;
+            }
+            names.Sort(StringComparer.OrdinalIgnoreCase);
+            int index = ListPicker.Pick(title, prompt, names);
+            return index < 0 ? null : names[index];
+        }
+
+        /// <summary>
         /// Lists the writable text parameters of a sample element and asks which one to use.
         /// Returns null if cancelled or if there are none.
         /// </summary>

@@ -83,6 +83,7 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
+            Busy.On();
             var pairs = new List<KeyValuePair<Element, Element>>();
             var seen = new HashSet<string>();
             int skipped = 0;
@@ -102,7 +103,7 @@ namespace ElecKit.Commands
 
                     foreach (Element b in hits)
                     {
-                        long idA = RevitApiCompat.ElementIdValue(a.Id), idB = RevitApiCompat.ElementIdValue(b.Id);
+                        int idA = a.Id.Val(), idB = b.Id.Val();
                         if (idA == idB) continue;
                         string key = Math.Min(idA, idB) + "-" + Math.Max(idA, idB);
                         if (seen.Add(key)) pairs.Add(new KeyValuePair<Element, Element>(a, b));
@@ -115,6 +116,7 @@ namespace ElecKit.Commands
                 }
             }
 
+            Busy.Off();
             if (pairs.Count == 0)
             {
                 TaskDialog.Show("Clash Check", "No clashes found." +
@@ -127,8 +129,8 @@ namespace ElecKit.Commands
             foreach (var pair in pairs)
             {
                 csv.AppendLine(string.Join(",",
-                    RevitApiCompat.ElementIdValue(pair.Key.Id), Csv.Escape(CategoryName(pair.Key)), Csv.Escape(pair.Key.Name),
-                    RevitApiCompat.ElementIdValue(pair.Value.Id), Csv.Escape(CategoryName(pair.Value)), Csv.Escape(pair.Value.Name)));
+                    pair.Key.Id.Val(), Csv.Escape(CategoryName(pair.Key)), Csv.Escape(pair.Key.Name),
+                    pair.Value.Id.Val(), Csv.Escape(CategoryName(pair.Value)), Csv.Escape(pair.Value.Name)));
             }
             string path = Reports.PathFor("ClashCheck", ".csv");
             System.IO.File.WriteAllText(path, csv.ToString(), new UTF8Encoding(true));
@@ -137,10 +139,9 @@ namespace ElecKit.Commands
             foreach (var pair in pairs) { involved.Add(pair.Key.Id); involved.Add(pair.Value.Id); }
             ctx.UiDoc.Selection.SetElementIds(involved.ToList());
 
-            string text = pairs.Count + " clash(es) found. All " + involved.Count + " elements involved are selected.\nReport: " + path;
-            if (skipped > 0) text += "\n" + skipped + " element(s) could not be tested (no solid geometry).";
-            TaskDialog.Show("Clash Check", text);
-            Reports.OpenIfWanted(path);
+            var notes = new List<string> { "All " + involved.Count + " elements involved are now selected." };
+            if (skipped > 0) notes.Add(skipped + " element(s) could not be tested (no solid geometry).");
+            Reports.Finish("Clash Check", pairs.Count + " clash(es) found.", notes, path);
             return Result.Succeeded;
         }
 

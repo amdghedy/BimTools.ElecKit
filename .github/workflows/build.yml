@@ -1,56 +1,100 @@
-name: Build and package Revit versions
+name: Build
 
 on:
   push:
-    branches: [main, feature/revit-2020-2027-packages]
+    branches: ['**']
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
+  # One build per Revit version. A version that fails does not stop the others.
   build:
     name: Revit ${{ matrix.revit }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        revit: ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027']
+        revit: [2020, 2021, 2022, 2023, 2024, 2025, 2026]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install .NET SDKs
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          dotnet-version: '8.0.x'
+      - name: Build
+        run: dotnet build ElecKit.csproj -c Release -p:RevitVersion=${{ matrix.revit }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElecKit-R${{ matrix.revit }}
+          path: bin/Release/R${{ matrix.revit }}/
+          if-no-files-found: error
 
-      - name: Build directly into the matching version folder
+  # One setup .exe containing every version that built successfully.
+  installer:
+    name: Setup .exe
+    needs: build
+    if: ${{ !cancelled() }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ElecKit-R*
+          path: built
+      - name: Pack all Revit versions into one payload
         shell: pwsh
         run: |
-          $version = "${{ matrix.revit }}"
-          $target = Join-Path $PWD "RevitVersions/$version"
-          dotnet build ElecKit.csproj --configuration Release -p:RevitVersion=$version
-          if ($LASTEXITCODE -ne 0) { throw "Revit $version build failed." }
-
-          $dll = Join-Path $target 'ElecKit.dll'
-          $addin = Join-Path $target 'ElecKit.addin'
-          if (!(Test-Path $dll)) { throw "Expected DLL was not created in target folder: $dll" }
-          if (!(Test-Path $addin)) { throw "Add-in manifest missing from target folder: $addin" }
-
-          @"
-          Package: ElecKit for Revit $version
-          Build commit: ${{ github.sha }}
-          DLL: RevitVersions/$version/ElecKit.dll
-          Manifest: RevitVersions/$version/ElecKit.addin
-          "@ | Set-Content (Join-Path $target 'BUILD-INFO.txt')
-
-      - name: Upload exact target folder contents
-        uses: actions/upload-artifact@v4
+          $payload = 'installer/payload'
+          New-Item -ItemType Directory -Force $payload | Out-Null
+          $versions = @(Get-ChildItem built -Directory)
+          if ($versions.Count -eq 0) { throw 'No successful Revit build to package.' }
+          foreach ($dir in $versions) {
+            $year = $dir.Name -replace '^ElecKit-R', ''
+            $target = Join-Path $payload $year
+            New-Item -ItemType Directory -Force $target | Out-Null
+            Copy-Item (Join-Path $dir.FullName '*') $target -Recurse
+          }
+          Copy-Item ElecKit.addin $payload
+          Compress-Archive -Path "$payload/*" -DestinationPath installer/payload.zip -Force
+          Write-Host ('Packed Revit versions: ' + (($versions | ForEach-Object { $_.Name }) -join ', '))
+      - name: Build setup
+        run: dotnet build installer/ElecKit.Installer.csproj -c Release
+      - name: Collect the setup file
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $exe = Get-ChildItem installer/bin -Recurse -Filter ElecKit-Setup.exe | Select-Object -First 1
+          if (-not $exe) { throw 'ElecKit-Setup.exe was not built.' }
+          Copy-Item $exe.FullName dist/
+      - uses: actions/upload-artifact@v4
         with:
-          name: ElecKit-Revit-${{ matrix.revit }}
-          path: RevitVersions/${{ matrix.revit }}/*
+          name: ElecKit-Setup
+          path: dist/ElecKit-Setup.exe
           if-no-files-found: error
-          retention-days: 30
+
+  # Pushing a tag such as v1.0.0 publishes the setup .exe as a GitHub release.
+  release:
+    name: Publish release
+    needs: installer
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ElecKit-Setup
+          path: dist
+      - name: Create or update the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $repo = '${{ github.repository }}'
+          gh release view $tag --repo $repo 2>$null
+          if ($LASTEXITCODE -ne 0) { gh release create $tag --repo $repo --title "ElecKit $tag" --generate-notes }
+          gh release upload $tag dist/ElecKit-Setup.exe --clobber --repo $repo

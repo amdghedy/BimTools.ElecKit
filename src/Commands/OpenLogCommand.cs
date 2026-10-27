@@ -17,7 +17,7 @@ namespace ElecKit.Commands
                 TaskDialog.Show("ElecKit Log", "The log is empty: no errors have been recorded yet.\n\n" + Log.FilePath);
                 return Result.Succeeded;
             }
-            Process.Start(Log.FilePath);
+            Shell.Open(Log.FilePath);
             return Result.Succeeded;
         }
     }

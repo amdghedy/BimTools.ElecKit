@@ -43,15 +43,10 @@ namespace ElecKit.Commands
             if (index < 0) return Result.Cancelled;
             FamilySymbol symbol = symbols[index];
 
-            string answer = Dialogs.Ask("Place Junction Box", "Height above the level, in millimetres:",
-                UnitConv.Format(ElecSettings.Current.JunctionBoxOffsetMm ?? 2700.0));
-            if (answer == null) return Result.Cancelled;
-            double offsetMm;
-            if (!UnitConv.TryParseNumber(answer, out offsetMm))
-            {
-                TaskDialog.Show("Place Junction Box", "Enter a number, for example 2700.");
-                return Result.Cancelled;
-            }
+            double? offset = Dialogs.AskNumber("Place Junction Box", "Height above the level:",
+                ElecSettings.Current.JunctionBoxOffsetMm ?? 2700.0, false, "mm");
+            if (offset == null) return Result.Cancelled;
+            double offsetMm = offset.Value;
             ElecSettings.Current.LastJunctionBoxType = names[index];
             ElecSettings.Current.JunctionBoxOffsetMm = offsetMm;
             ElecSettings.Current.Save();

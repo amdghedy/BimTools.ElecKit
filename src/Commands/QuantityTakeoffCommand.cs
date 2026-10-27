@@ -42,6 +42,7 @@ namespace ElecKit.Commands
                 source = new FilteredElementCollector(ctx.Doc, view.Id).WhereElementIsNotElementType().ToList();
             }
 
+            Busy.On();
             var rows = new Dictionary<string, Row>();
             foreach (Element element in source)
             {
@@ -65,6 +66,7 @@ namespace ElecKit.Commands
                 if (location != null) row.LengthFeet += location.Curve.Length;
             }
 
+            Busy.Off();
             if (rows.Count == 0)
             {
                 TaskDialog.Show("Quantity Takeoff", "No model elements were found in the selection or in this view.");

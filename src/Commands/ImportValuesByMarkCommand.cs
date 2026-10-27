@@ -38,6 +38,7 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
+            Busy.On();
             var byMark = new Dictionary<string, List<Element>>(StringComparer.OrdinalIgnoreCase);
             foreach (Element element in new FilteredElementCollector(ctx.Doc).WhereElementIsNotElementType())
             {
@@ -85,6 +86,7 @@ namespace ElecKit.Commands
                 }
             }
 
+            Busy.Off();
             string preview = matchedRows + " row(s) matched an element by Mark; " + updates.Count + " value(s) will change.";
             if (unmatched.Count > 0)
                 preview += "\n\nNo element has these marks (" + unmatched.Count + "): " + string.Join(", ", unmatched.Take(10)) + (unmatched.Count > 10 ? " ..." : "");

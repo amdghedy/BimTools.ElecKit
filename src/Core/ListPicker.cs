@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interop;
 
 namespace ElecKit.Core
 {
@@ -13,8 +11,9 @@ namespace ElecKit.Core
         /// <summary>Returns the index in <paramref name="items"/> of the chosen entry, or -1 if cancelled.</summary>
         public static int Pick(string title, string prompt, IList<string> items)
         {
-            var filterBox = new TextBox { Margin = new Thickness(0, 6, 0, 6) };
-            var list = new ListBox { MinHeight = 260, MaxHeight = 420, MinWidth = 440 };
+            var filterBox = new TextBox { Padding = new Thickness(6, 4, 6, 4), Margin = new Thickness(0, 8, 0, 0) };
+            var list = new ListBox { MinHeight = 260, MaxHeight = 380, MinWidth = 520, Margin = new Thickness(0, 8, 0, 0), BorderBrush = Theme.Line };
+            var count = new TextBlock { Foreground = Theme.Muted, FontSize = 11.5, Margin = new Thickness(0, 6, 0, 0) };
             var shown = new List<int>();
 
             Action refresh = () =>
@@ -31,52 +30,32 @@ namespace ElecKit.Core
                     }
                 }
                 if (list.Items.Count > 0) list.SelectedIndex = 0;
+                count.Text = shown.Count + " of " + items.Count + (needle.Length > 0 ? " match \"" + needle + "\"" : "");
             };
 
-            var window = new Window
-            {
-                Title = title,
-                SizeToContent = SizeToContent.WidthAndHeight,
-                ResizeMode = ResizeMode.NoResize,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                ShowInTaskbar = false,
-                Topmost = true
-            };
+            var body = new StackPanel();
+            body.Children.Add(Theme.Prompt(prompt));
+            body.Children.Add(filterBox);
+            body.Children.Add(list);
+            body.Children.Add(count);
 
-            var ok = new Button { Content = "OK", Width = 80, IsDefault = true, Margin = new Thickness(0, 0, 8, 0) };
-            var cancel = new Button { Content = "Cancel", Width = 80, IsCancel = true };
-            var buttons = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 12, 0, 0)
-            };
-            buttons.Children.Add(ok);
-            buttons.Children.Add(cancel);
-
-            var panel = new StackPanel { Margin = new Thickness(14) };
-            panel.Children.Add(new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap, MaxWidth = 440 });
-            panel.Children.Add(filterBox);
-            panel.Children.Add(list);
-            panel.Children.Add(buttons);
-            window.Content = panel;
-
+            var shell = new DialogShell(title, body);
             int result = -1;
             Action accept = () =>
             {
                 if (list.SelectedIndex < 0) return;
                 result = shown[list.SelectedIndex];
-                window.DialogResult = true;
+                shell.Window.DialogResult = true;
             };
 
+            shell.AddButton("Cancel", false, false, true, null);
+            shell.AddButton("OK", true, true, false, (s, e) => accept());
             filterBox.TextChanged += (s, e) => refresh();
-            ok.Click += (s, e) => accept();
             list.MouseDoubleClick += (s, e) => accept();
-            window.Loaded += (s, e) => filterBox.Focus();
+            shell.Window.Loaded += (s, e) => filterBox.Focus();
 
             refresh();
-            new WindowInteropHelper(window).Owner = Process.GetCurrentProcess().MainWindowHandle;
-            return window.ShowDialog() == true ? result : -1;
+            return shell.Show() == true ? result : -1;
         }
     }
 }

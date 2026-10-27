@@ -57,17 +57,10 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
-            string distanceAnswer = Dialogs.Ask("Wire Info to Comments",
-                "Look for devices and wires within this distance of each conduit, in millimetres (measured in plan):",
-                UnitConv.Format(ElecSettings.Current.EffectiveNearbyMm));
-            if (distanceAnswer == null) return Result.Cancelled;
-
-            double distanceMm;
-            if (!UnitConv.TryParseNumber(distanceAnswer, out distanceMm) || distanceMm <= 0)
-            {
-                TaskDialog.Show("Wire Info to Comments", "Enter a number greater than zero, for example 500.");
-                return Result.Cancelled;
-            }
+            double? distance = Dialogs.AskNumber("Wire Info to Comments", "Look for devices and wires within this distance of each conduit (measured in plan):",
+                ElecSettings.Current.EffectiveNearbyMm, true, "mm");
+            if (distance == null) return Result.Cancelled;
+            double distanceMm = distance.Value;
 
             int writeMode = Dialogs.Choose("Wire Info to Comments", "What to do with the existing Comments value?",
                 new List<string> { "Replace it", "Append to it" }, 0);

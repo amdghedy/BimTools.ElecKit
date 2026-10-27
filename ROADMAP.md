@@ -91,7 +91,13 @@ bring the total to 44. Status: all built.
 Not included: the server-based "Update" and "Contact Us" commands. This add-in has no update server and no licensing.
 
 ## Also included
-Options (report folder, auto-open, default fillet radius) and Open Log, in the Settings panel.
+- Tool Finder: search all tools and run them from one list; recently used tools stay on top (Tools panel).
+- Circuits: Create Circuits, Select by Panel, Color by Circuit / Clear Colors (view overrides), Unassigned Devices, Voltage Drop (uses the Cable Catalog).
+- Data: Room to Parameter, Find and Replace, Copy Parameter. Analysis: Devices by Room, Model Warnings. Model: Set Elevation.
+- Tools: Project Health (one-page health check), Save Selection and Recall Selection (named selections per project).
+- Options (report folder, auto-open, default fillet radius) and Open Log (Settings panel).
+- Colour icons on every ribbon button, drawn in code.
+- One build per Revit version 2020 to 2026, and a single setup .exe for all of them (see README).
 
 ## Notes
 - Every tool was written for Revit 2020 and checked by the GitHub Actions build; test each one on a copy of a real project before relying on it.

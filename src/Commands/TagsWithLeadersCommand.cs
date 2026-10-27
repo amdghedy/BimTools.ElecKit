@@ -44,17 +44,10 @@ namespace ElecKit.Commands
             }, 0);
             if (direction < 0) return Result.Cancelled;
 
-            string answer = Dialogs.Ask("Tags with Leaders",
-                "Distance from the element to the tag head, in mm on the printed sheet:",
-                UnitConv.Format(ElecSettings.Current.TagOffsetMm ?? 15.0));
-            if (answer == null) return Result.Cancelled;
-
-            double paperMm;
-            if (!UnitConv.TryParseNumber(answer, out paperMm) || paperMm <= 0)
-            {
-                TaskDialog.Show("Tags with Leaders", "Enter a number greater than zero, for example 15.");
-                return Result.Cancelled;
-            }
+            double? paper = Dialogs.AskNumber("Tags with Leaders", "Distance from the element to the tag head, measured on the printed sheet:",
+                ElecSettings.Current.TagOffsetMm ?? 15.0, true, "mm");
+            if (paper == null) return Result.Cancelled;
+            double paperMm = paper.Value;
             ElecSettings.Current.TagOffsetMm = paperMm;
             ElecSettings.Current.Save();
 

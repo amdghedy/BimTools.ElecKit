@@ -37,8 +37,8 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
-            long currentId = RevitApiCompat.ElementIdValue(sample.GetTypeId());
-            var labels = options.Select(t => t.Name + (RevitApiCompat.ElementIdValue(t.Id) == currentId ? "   (current)" : "")).ToList();
+            int currentId = sample.GetTypeId().Val();
+            var labels = options.Select(t => t.Name + (t.Id.Val() == currentId ? "   (current)" : "")).ToList();
             int index = ListPicker.Pick("Family Type Manager",
                 options.Count + " type(s) available. Pick the type to switch to:", labels);
             if (index < 0) return Result.Cancelled;
@@ -53,7 +53,7 @@ namespace ElecKit.Commands
                 foreach (Element element in elements)
                 {
                     if (!SameGroup(sample, element)) { skipped++; continue; }
-                    if (RevitApiCompat.ElementIdValue(element.GetTypeId()) == RevitApiCompat.ElementIdValue(chosen.Id)) continue;
+                    if (element.GetTypeId().Val() == chosen.Id.Val()) continue;
                     element.ChangeTypeId(chosen.Id);
                     changed++;
                 }
@@ -68,16 +68,16 @@ namespace ElecKit.Commands
         private static bool HasType(Element e)
         {
             return e != null && e.Category != null && e.GetTypeId() != null &&
-                   RevitApiCompat.ElementIdValue(e.GetTypeId()) != RevitApiCompat.ElementIdValue(ElementId.InvalidElementId);
+                   e.GetTypeId().Val() != ElementId.InvalidElementId.Val();
         }
 
         private static bool SameGroup(Element sample, Element other)
         {
             var a = sample as FamilyInstance;
             var b = other as FamilyInstance;
-            if (a != null && b != null) return RevitApiCompat.ElementIdValue(a.Symbol.Family.Id) == RevitApiCompat.ElementIdValue(b.Symbol.Family.Id);
+            if (a != null && b != null) return a.Symbol.Family.Id.Val() == b.Symbol.Family.Id.Val();
             if (a != null || b != null) return false;
-            return RevitApiCompat.ElementIdValue(sample.Category.Id) == RevitApiCompat.ElementIdValue(other.Category.Id);
+            return sample.Category.Id.Val() == other.Category.Id.Val();
         }
 
         private static List<ElementType> TypesFor(Document doc, Element sample)

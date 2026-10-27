@@ -52,8 +52,8 @@ namespace ElecKit.Commands
             var text = new StringBuilder();
             text.Append("CABLE TRAY SUMMARY\r\r");
             text.Append("Type   Width x Height   |   Count   |   Length (m)\r");
-            foreach (var group in groups)
-                text.Append(group.Key + "   |   " + group.Value.Key + "   |   " + Meters(group.Value.Value) + "\r");
+            foreach (var entry in groups)
+                text.Append(entry.Key + "   |   " + entry.Value.Key + "   |   " + Meters(entry.Value.Value) + "\r");
             text.Append("\rTotal: " + trays.Count + " tray(s), " + Meters(totalFeet) + " m");
 
             ViewFamilyType draftingType = new FilteredElementCollector(ctx.Doc)

@@ -13,6 +13,7 @@ namespace ElecKit.Core
         [DataMember] public int Conductors { get; set; }
         [DataMember] public double CrossSectionMm2 { get; set; }
         [DataMember] public double OuterDiameterMm { get; set; }
+        [DataMember] public double AmpacityA { get; set; }   // 0 = not set; Voltage Drop only checks it when filled in
         [DataMember] public string Notes { get; set; }
     }
 

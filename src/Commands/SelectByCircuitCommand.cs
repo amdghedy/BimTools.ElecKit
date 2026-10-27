@@ -15,10 +15,10 @@ namespace ElecKit.Commands
         {
             Reference picked = ctx.UiDoc.Selection.PickObject(
                 ObjectType.Element, "Pick an element that is on a circuit");
-            long pickedId = RevitApiCompat.ElementIdValue(ctx.Doc.GetElement(picked).Id);
+            int pickedId = ctx.Doc.GetElement(picked).Id.Val();
 
             var ids = new List<ElementId>();
-            var seen = new HashSet<long>();
+            var seen = new HashSet<int>();
             bool onCircuit = false;
 
             foreach (Element item in new FilteredElementCollector(ctx.Doc).OfClass(typeof(ElectricalSystem)))
@@ -29,14 +29,14 @@ namespace ElecKit.Commands
                 bool contains = false;
                 foreach (Element member in system.Elements)
                 {
-                    if (RevitApiCompat.ElementIdValue(member.Id) == pickedId) { contains = true; break; }
+                    if (member.Id.Val() == pickedId) { contains = true; break; }
                 }
                 if (!contains) continue;
 
                 onCircuit = true;
                 foreach (Element member in system.Elements)
                 {
-                    if (seen.Add(RevitApiCompat.ElementIdValue(member.Id))) ids.Add(member.Id);
+                    if (seen.Add(member.Id.Val())) ids.Add(member.Id);
                 }
             }
 

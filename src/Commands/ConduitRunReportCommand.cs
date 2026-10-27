@@ -51,7 +51,7 @@ namespace ElecKit.Commands
                 string level = Name(ctx.Doc.GetElement(conduit.LevelId));
                 string comments = Value(conduit, BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
 
-                csv.AppendLine(string.Join(",", RevitApiCompat.ElementIdValue(conduit.Id), Csv.Escape(typeName), Csv.Escape(size),
+                csv.AppendLine(string.Join(",", conduit.Id.Val(), Csv.Escape(typeName), Csv.Escape(size),
                     Csv.Escape(length), Meters(feet), Csv.Escape(level), Csv.Escape(comments)));
 
                 string key = size.Length > 0 ? size : "(no size)";

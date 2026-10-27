@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'ElecKit'">
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2020</RevitVersion>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\R$(RevitVersion)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

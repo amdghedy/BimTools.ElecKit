@@ -45,8 +45,7 @@ namespace ElecKit.Commands
                 "CircuitReport_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv");
             File.WriteAllText(file, sb.ToString(), new UTF8Encoding(true));
 
-            TaskDialog.Show("Circuit Report", systems.Count + " circuits exported to:\n" + file);
-            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(file);
+            Reports.Finish("Circuit Report", systems.Count + " circuit(s) exported.", null, file);
             return Result.Succeeded;
         }
     }

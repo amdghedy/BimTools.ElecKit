@@ -81,7 +81,7 @@ namespace ElecKit.Commands
         {
             // a throw-away check: any sheet id works because the rule is about the view
             var sheetId = new FilteredElementCollector(doc).OfClass(typeof(ViewSheet)).FirstElementId();
-            if (sheetId == null || RevitApiCompat.ElementIdValue(sheetId) == RevitApiCompat.ElementIdValue(ElementId.InvalidElementId)) return true;
+            if (sheetId == null || sheetId.Val() == ElementId.InvalidElementId.Val()) return true;
             return Viewport.CanAddViewToSheet(doc, sheetId, view.Id);
         }
     }

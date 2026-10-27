@@ -27,14 +27,26 @@ namespace ElecKit.Commands
                 new List<string> { "Yes", "No" }, ElecSettings.Current.DoNotOpenReports ? 1 : 0);
             if (open < 0) return Result.Cancelled;
 
-            string radius = Dialogs.Ask("ElecKit Options", "Default fillet radius in millimetres:",
-                UnitConv.Format(ElecSettings.Current.EffectiveFilletRadiusMm));
+            double? radius = Dialogs.AskNumber("ElecKit Options", "Default fillet radius:",
+                ElecSettings.Current.EffectiveFilletRadiusMm, true, "mm");
             if (radius == null) return Result.Cancelled;
-            double radiusMm;
-            if (!UnitConv.TryParseNumber(radius, out radiusMm) || radiusMm <= 0)
+            double radiusMm = radius.Value;
+
+            int reset = Dialogs.Choose("ElecKit Options",
+                "Forget the remembered choices (last conduit type, line style, tray size, recent tools...)?",
+                new List<string> { "No, keep them", "Yes, forget them" }, 0);
+            if (reset < 0) return Result.Cancelled;
+            if (reset == 1)
             {
-                TaskDialog.Show("ElecKit Options", "The fillet radius must be a number greater than zero.");
-                return Result.Cancelled;
+                ElecSettings.Current.LastConduitType = null;
+                ElecSettings.Current.LastLineStyle = null;
+                ElecSettings.Current.LastWireType = null;
+                ElecSettings.Current.LastCircuitParam = null;
+                ElecSettings.Current.LastLabelParam = null;
+                ElecSettings.Current.LastJunctionBoxType = null;
+                ElecSettings.Current.LastTrayType = null;
+                ElecSettings.Current.TraySize = null;
+                ElecSettings.Current.RecentTools = null;
             }
 
             ElecSettings.Current.ReportFolder = folder.Length == 0 ? null : folder;

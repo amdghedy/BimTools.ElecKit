@@ -33,7 +33,7 @@ namespace ElecKit.Commands
             IList<Reference> deviceRefs = ctx.UiDoc.Selection.PickObjects(ObjectType.Element, filter,
                 "Pick the devices in order, then click Finish");
             List<Element> devices = deviceRefs
-                .Where(r => RevitApiCompat.ElementIdValue(r.ElementId) != RevitApiCompat.ElementIdValue(panel.Id))
+                .Where(r => r.ElementId.Val() != panel.Id.Val())
                 .Select(r => ctx.Doc.GetElement(r))
                 .ToList();
             if (devices.Count == 0)
@@ -70,9 +70,9 @@ namespace ElecKit.Commands
             {
                 for (int i = 0; i < devices.Count; i++)
                 {
-                    XYZ from = Anchors.Of(devices[i]);
-                    XYZ to = i < devices.Count - 1 ? Anchors.Of(devices[i + 1]) : panelPoint;
-                    pairs.Add(new[] { from, to });
+                    XYZ origin = Anchors.Of(devices[i]);
+                    XYZ destination = i < devices.Count - 1 ? Anchors.Of(devices[i + 1]) : panelPoint;
+                    pairs.Add(new[] { origin, destination });
                 }
             }
 

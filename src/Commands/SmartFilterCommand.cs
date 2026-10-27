@@ -56,14 +56,14 @@ namespace ElecKit.Commands
             string paramName = null, paramValue = null;
             if (paramText.Length > 0)
             {
-                int equals = paramText.IndexOf('=');
-                if (equals <= 0)
+                int separator = paramText.IndexOf('=');
+                if (separator <= 0)
                 {
                     TaskDialog.Show("Smart Filter", "Use the form Name=Value, for example Mark=A1.");
                     return Result.Cancelled;
                 }
-                paramName = paramText.Substring(0, equals).Trim();
-                paramValue = paramText.Substring(equals + 1).Trim();
+                paramName = paramText.Substring(0, separator).Trim();
+                paramValue = paramText.Substring(separator + 1).Trim();
             }
 
             var matches = new List<ElementId>();

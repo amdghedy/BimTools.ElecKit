@@ -3,3 +3,7 @@ obj/
 .vs/
 *.user
 *.suo
+installer/payload/
+installer/payload.zip
+dist/
+built/

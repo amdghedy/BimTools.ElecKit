@@ -84,10 +84,10 @@ namespace ElecKit.Commands
             return Result.Succeeded;
         }
 
-        private static long StyleKey(CurveElement c)
+        private static int StyleKey(CurveElement c)
         {
             Element style = c.LineStyle;
-            return style == null ? -1 : RevitApiCompat.ElementIdValue(style.Id);
+            return style == null ? -1 : style.Id.Val();
         }
     }
 }

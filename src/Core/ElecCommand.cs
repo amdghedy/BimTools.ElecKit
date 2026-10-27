@@ -27,6 +27,10 @@ namespace ElecKit.Core
                 message = ex.Message;
                 return Result.Failed;
             }
+            finally
+            {
+                Busy.Off();
+            }
         }
 
         protected abstract Result Run(ToolContext ctx, ref string message);

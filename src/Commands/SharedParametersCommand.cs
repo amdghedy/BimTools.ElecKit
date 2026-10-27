@@ -93,7 +93,7 @@ namespace ElecKit.Commands
                         definition = group.Definitions.Create(new ExternalDefinitionCreationOptions(Names[i], Types[i]));
 
                     InstanceBinding binding = app.Create.NewInstanceBinding(categories);
-#if REVIT2025_OR_GREATER
+#if REVIT2024_OR_GREATER
                     bool inserted = ctx.Doc.ParameterBindings.Insert(definition, binding, GroupTypeId.IdentityData);
 #else
                     bool inserted = ctx.Doc.ParameterBindings.Insert(definition, binding, BuiltInParameterGroup.PG_IDENTITY_DATA);

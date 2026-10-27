@@ -48,11 +48,9 @@ namespace ElecKit.Commands
                 }
             }
 
-            string text = exported + " schedule(s) exported to:\n" + folder;
-            if (failed.Count > 0) text += "\n\nSkipped (see log):\n" + string.Join("\n", failed);
-            TaskDialog.Show("Export All Schedules", text);
-
-            if (!ElecSettings.Current.DoNotOpenReports) Process.Start(folder);
+            var notes = new List<string>();
+            if (failed.Count > 0) notes.Add("Skipped (see log): " + string.Join(", ", failed));
+            Reports.Finish("Export All Schedules", exported + " schedule(s) exported.", notes, folder);
             return Result.Succeeded;
         }
     }

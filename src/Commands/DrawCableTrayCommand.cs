@@ -57,15 +57,10 @@ namespace ElecKit.Commands
                 return Result.Cancelled;
             }
 
-            string offsetAnswer = Dialogs.Ask("Draw Cable Tray", "Height above the level, in millimetres:",
-                UnitConv.Format(ElecSettings.Current.TrayOffsetMm ?? 3000.0));
-            if (offsetAnswer == null) return Result.Cancelled;
-            double offsetMm;
-            if (!UnitConv.TryParseNumber(offsetAnswer, out offsetMm))
-            {
-                TaskDialog.Show("Draw Cable Tray", "Enter a number, for example 3000.");
-                return Result.Cancelled;
-            }
+            double? offset = Dialogs.AskNumber("Draw Cable Tray", "Height above the level:",
+                ElecSettings.Current.TrayOffsetMm ?? 3000.0, false, "mm");
+            if (offset == null) return Result.Cancelled;
+            double offsetMm = offset.Value;
 
             ElecSettings.Current.LastTrayType = type.Name;
             ElecSettings.Current.TraySize = UnitConv.Format(widthMm) + "x" + UnitConv.Format(heightMm);
@@ -95,17 +90,17 @@ namespace ElecKit.Commands
 
                     CableTray tray = null;
                     ElbowResult elbow = ElbowResult.Skipped;
-                    XYZ from = previous;
+                    XYZ segmentStart = previous;
                     try
                     {
                         ctx.Transact("Draw cable tray", () =>
                         {
-                            tray = CableTray.Create(ctx.Doc, type.Id, from, point, level.Id);
+                            tray = CableTray.Create(ctx.Doc, type.Id, segmentStart, point, level.Id);
                             SetSize(tray, width, height);
                             if (previousTray != null)
                             {
                                 ctx.Doc.Regenerate();
-                                elbow = ConduitFittings.TryElbow(ctx.Doc, previousTray, tray, from);
+                                elbow = ConduitFittings.TryElbow(ctx.Doc, previousTray, tray, segmentStart);
                             }
                         });
                     }

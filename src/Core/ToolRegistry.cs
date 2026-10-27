@@ -23,6 +23,20 @@ namespace ElecKit.Core
 
         public static readonly IReadOnlyList<ToolInfo> Tools = new List<ToolInfo>
         {
+            // Tools
+            T("ToolFinder", "Tool\nFinder", "Tools",
+              "Search every ElecKit tool by name or description and run it from one list. Recently used tools stay at the top.",
+              typeof(ToolFinderCommand)),
+            T("ProjectHealth", "Project\nHealth", "Tools",
+              "One-page health check of the electrical model: devices and circuits, panels, conduit and tray lengths, warnings, and what to fix first.",
+              typeof(ProjectHealthCommand)),
+            T("SaveSelection", "Save\nSelection", "Tools",
+              "Saves the current selection under a name, for this project.",
+              typeof(SaveSelectionCommand)),
+            T("RecallSelection", "Recall\nSelection", "Tools",
+              "Selects the elements of a saved selection again, or deletes a saved selection.",
+              typeof(RecallSelectionCommand)),
+
             // Drafting
             T("CadToDetail", "CAD to\nDetail Lines", "Drafting",
               "Redraws the lines and arcs of an imported or linked CAD file as detail lines in the active view. Optional layer filter.",
@@ -105,6 +119,9 @@ namespace ElecKit.Core
             T("ThreeDFromSelection", "3D from\nSelection", "Model",
               "Creates a 3D view with the section box fitted around the selected elements.",
               typeof(ThreeDFromSelectionCommand)),
+            T("SetElevation", "Set\nElevation", "Model",
+              "Sets the height above the level of selected conduits, trays, ducts or pipes at both ends.",
+              typeof(SetElevationCommand)),
             // Analysis
             T("ClashCheck", "Clash\nCheck", "Analysis",
               "Finds selected elements or a category that intersect a chosen category. Saves a CSV report and selects the elements involved.",
@@ -115,6 +132,12 @@ namespace ElecKit.Core
             T("SmartFilter", "Smart\nFilter", "Analysis",
               "Finds elements in the view by category, type name and parameter value, then selects or isolates them.",
               typeof(SmartFilterCommand)),
+            T("WarningsExport", "Model\nWarnings", "Analysis",
+              "Saves every model warning to a CSV with the element ids, and shows the most frequent warnings.",
+              typeof(WarningsExportCommand)),
+            T("DevicesByRoom", "Devices\nby Room", "Analysis",
+              "Counts electrical devices in each room by category and type. Saves a CSV and shows the totals per room.",
+              typeof(DevicesByRoomCommand)),
             // Schedules
             T("ExportAllSchedules", "Export All\nSchedules", "Schedules",
               "Exports every schedule in the model to its own CSV file in a new folder.",
@@ -158,6 +181,15 @@ namespace ElecKit.Core
             T("FamilyTypeManager", "Family Type\nManager", "Data",
               "Lists the types available for the selected element and switches all matching selected elements to the one you pick.",
               typeof(FamilyTypeManagerCommand)),
+            T("RoomToParameter", "Room to\nParameter", "Data",
+              "Writes the room number and/or name of each electrical device into a text parameter.",
+              typeof(RoomToParameterCommand)),
+            T("ParameterFindReplace", "Find and\nReplace", "Data",
+              "Replaces text in, or adds a prefix or suffix to, a text parameter on the selected elements. Shows the count first.",
+              typeof(ParameterFindReplaceCommand)),
+            T("CopyParameter", "Copy\nParameter", "Data",
+              "Copies the value of one parameter into a text parameter for every selected element.",
+              typeof(CopyParameterCommand)),
             // Circuits
             T("CircuitReport", "Circuit\nReport", "Circuits",
               "Exports every circuit (panel, circuit number, load name, element count) to a CSV file.",
@@ -165,13 +197,34 @@ namespace ElecKit.Core
             T("SelectByCircuit", "Select by\nCircuit", "Circuits",
               "Pick one element and select every element on the same circuit(s).",
               typeof(SelectByCircuitCommand)),
+            T("UnassignedDevices", "Unassigned\nDevices", "Circuits",
+              "Finds electrical devices that are on no circuit, selects them and saves a list.",
+              typeof(UnassignedDevicesCommand)),
+            T("CreateCircuits", "Create\nCircuits", "Circuits",
+              "Creates power circuits from selected fixtures and devices (one for all, or one each) and connects them to a panel.",
+              typeof(CreateCircuitsCommand)),
+            T("SelectByPanel", "Select by\nPanel", "Circuits",
+              "Selects every element fed by a panel.",
+              typeof(SelectByPanelCommand)),
+            T("ColorByCircuit", "Color by\nCircuit", "Circuits",
+              "Colours the devices in the view by panel or circuit with view overrides, and lists which colour is which.",
+              typeof(ColorByCircuitCommand)),
+            T("ClearColors", "Clear\nColors", "Circuits",
+              "Removes the colour overrides from the devices on circuits in the view.",
+              typeof(ClearColorsCommand)),
+            T("VoltageDrop", "Voltage\nDrop", "Circuits",
+              "Estimates the voltage drop of each circuit from load, voltage, poles and length, and picks cables from the Cable Catalog. A screening aid, not a design calculation.",
+              typeof(VoltageDropCommand)),
             // Settings
             T("Options", "Options", "Settings",
               "Sets the report folder, whether reports open automatically, and the default fillet radius.",
               typeof(OptionsCommand)),
             T("OpenLog", "Open\nLog", "Settings",
               "Opens the ElecKit log file with the details of any error.",
-              typeof(OpenLogCommand))
+              typeof(OpenLogCommand)),
+            T("AboutHelp", "About and\nHelp", "Settings",
+              "Version, quick start, where files are kept, and the full list of tools with what each one does.",
+              typeof(AboutCommand))
         };
     }
 }
